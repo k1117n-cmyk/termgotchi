@@ -2,6 +2,8 @@
 
 ノートPC側で `termgotchi` を使うための最小手順です。
 
+Git の運用手順は [notebook-git-workflow-ja.md](./notebook-git-workflow-ja.md) を参照。
+
 ## 初回セットアップ
 
 1. リポジトリのルートで installer を実行する
