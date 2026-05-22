@@ -1,3 +1,4 @@
 .DS_Store
+local/
 dist/*.tar.gz
 dist/*.zip
