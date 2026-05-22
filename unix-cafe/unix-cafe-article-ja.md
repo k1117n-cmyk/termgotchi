@@ -364,6 +364,160 @@ dist/termgotchi-portable/
 
 ---
 
+## 2 台運用を始めて、Git の置き方も見直した
+
+配布できる形まで整うと、今度は
+
+- ノートPCで続きを書く
+- デスクトップで確認する
+
+という流れが自然に増えてきます。
+
+ここで改めて効いてきたのが、コードそのものではなく **Git の管理方法** でした。
+
+今回の Term-gotchi では、GitHub ではなく iCloud Drive 上の bare repository を `origin` にして、2 台の Mac を同期する形にしました。
+
+構成は次の通りです。
+
+```text
+ノートPCの作業用 clone
+  -> push
+
+iCloud Drive 上の bare repository
+  /Users/noi/Library/Mobile Documents/com~apple~CloudDocs/git-remotes/termgotchi.git
+
+デスクトップの作業用 clone
+  <- pull / push
+```
+
+bare repository は作業ディレクトリではなく、履歴だけを持つ Git の保管庫です。
+`origin` の置き場所として使うと、同じユーザー環境の中だけで完結する 2 台運用がかなりシンプルになります。
+
+---
+
+## 最初は `git pull` が失敗した
+
+ただし、最初からうまくいったわけではありません。
+
+デスクトップ側には元から `~/termgotchi` がありましたが、それは clone ではなく、単にファイルが置かれているディレクトリでした。
+
+その状態で `git pull` を打つと、こうなります。
+
+```bash
+fatal: not a git repository (or any of the parent directories): .git
+```
+
+つまり、ファイルが同じでも `.git` がなければ Git の作業コピーではありません。
+
+ここでようやく、
+
+> `git pull` は、すでに Git 管理されている clone の中で使う
+
+という基本を、運用の中で改めて整理することになりました。
+
+---
+
+## 正しく復旧した手順
+
+対処はシンプルです。
+
+1. 既存ディレクトリを退避する
+2. bare repository から改めて clone する
+3. 必要なら旧ディレクトリからローカル資料だけ拾う
+
+実際のコマンドはこうでした。
+
+```bash
+mv ~/termgotchi ~/termgotchi.backup-2026-05-22
+git clone "/Users/noi/Library/Mobile Documents/com~apple~CloudDocs/git-remotes/termgotchi.git" ~/termgotchi
+```
+
+このとき、パスに空白が入っているので引用符が必要です。
+また、コマンドを途中改行すると別のパスとして扱われるので、1 行で打つのも重要でした。
+
+---
+
+## `main` と `master` のねじれも出た
+
+clone 自体はできたのですが、次の警告が出ました。
+
+```bash
+warning: remote HEAD refers to nonexistent ref, unable to checkout
+```
+
+原因は、bare repository 側の `HEAD` が `master` を向いているのに、実際のブランチは `main` だったことです。
+
+まず clone 側で正しい追跡ブランチを作り、
+
+```bash
+git switch -c main --track origin/main
+```
+
+次に bare repository 側の `HEAD` も `main` へ直しました。
+
+```bash
+cd "/Users/noi/Library/Mobile Documents/com~apple~CloudDocs/git-remotes/termgotchi.git"
+git symbolic-ref HEAD refs/heads/main
+```
+
+こうしておくと、次回以降の clone で警告が出ません。
+
+---
+
+## プロジェクト資産と個人メモを分けた
+
+復旧後、旧ディレクトリにはメモや ASCII アート案が残っていました。
+
+ただし、全部をそのまま戻すと、最新の `main` を壊す可能性があります。
+
+そこで今回は、
+
+- `art/` に置く資料は Git 管理する
+- 個人用メモは `local/` に置き、`.gitignore` で無視する
+
+という整理にしました。
+
+たとえば、
+
+- `art/builder.txt`
+- `art/character.txt`
+- `art/sage.txt`
+
+は Git に入れ、
+
+- `local/termgotchi_memo.txt`
+
+はローカル専用にしています。
+
+こうしておくと、「プロジェクトとして残すもの」と「自分だけが見る補助メモ」が混ざりません。
+
+---
+
+## 小さな個人開発でも、同期の仕組みは早めに整えた方がいい
+
+今回の 2 台運用整理で実感したのは、次の 3 点です。
+
+1. `git pull` は clone に対して使う
+2. bare repository を中央に置くと、2 台運用がかなり単純になる
+3. `main` / `master` とローカル資料の置き場は最初に決めた方がいい
+
+Term-gotchi のような小さな個人開発でも、この差は大きいです。
+
+```bash
+git pull
+git add
+git commit
+git push
+```
+
+を、ノートPCでもデスクトップでも同じ感覚で回せるようになると、開発の集中力が落ちません。
+
+「作ること」に集中するために、同期の仕組みは早めに整えておく。
+
+これは今回の開発で、コード以外の面から学んだ大きなポイントでした。
+
+---
+
 ## 実際にやってよかったこと
 
 今回の開発で、特によかったのは次の 5 つです。
