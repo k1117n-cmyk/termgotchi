@@ -1,0 +1,37 @@
+  - 作業前: git pull
+  - 作業後: git add → git commit → git push
+
+Git Lesson1
+
+  1. 状態を確認する
+
+  cd ~/termgotchi
+  git status
+
+  2. 今回コミットしたいファイルだけ追加する
+
+  git add README.md README.ja.md
+
+  作業前後手順.txt は今回は含めないので add しません。
+
+  3. 追加結果を確認する
+
+  git status
+
+  Changes to be committed に README.md と README.ja.md が出れば正しいです。
+
+  4. コミットする
+
+  git commit -m "Add Japanese README"
+
+  5. push する
+
+  git push
+
+  6. 最後に確認する
+
+  git status
+
+  nothing to commit, working tree clean なら完了です。
+
+  今回のポイ
