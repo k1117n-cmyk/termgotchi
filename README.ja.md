@@ -8,6 +8,7 @@ Term-gotchi は `zsh` 向けのターミナルコンパニオンです。
 - [Term-gotchi: zshで育てるミニペットアプリ](https://pc-fan.net/term-gotchi-zsh-mini-pet-app/)
 - [Term-gotchi 成長記録: shell hook から buddy まで](https://pc-fan.net/term-gotchi-growth-history/)
 - [Term-gotchi tg_talk: ターミナルで英語練習](https://pc-fan.net/term-gotchi-tg-talk-english-practice/)
+- [Term-gotchi を Git / GitHub で配布する](https://pc-fan.net/term-gotchi-git-github-distribution/)
 
 ## コンセプト
 

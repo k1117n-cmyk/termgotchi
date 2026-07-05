@@ -10,6 +10,7 @@ Japanese README: [`README.ja.md`](./README.ja.md)
 - [Term-gotchi: a tiny zsh terminal pet app](https://pc-fan.net/term-gotchi-zsh-mini-pet-app/)
 - [Term-gotchi growth history: from shell hook to buddy](https://pc-fan.net/term-gotchi-growth-history/)
 - [Term-gotchi tg_talk: English practice in the terminal](https://pc-fan.net/term-gotchi-tg-talk-english-practice/)
+- [Term-gotchi Git/GitHub distribution workflow](https://pc-fan.net/term-gotchi-git-github-distribution/)
 
 ## Concept
 
