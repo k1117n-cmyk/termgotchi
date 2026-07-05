@@ -1,0 +1,704 @@
+第3回 | 育てた相棒に、英語を教わる。Term-gotchi の tg_talk を会話練習モードに育てた開発記 | UNIX Cafe
+<!-- wp:image {"id":44585,"sizeSlug":"large","linkDestination":"none"} -->
+<figure class="wp-block-image size-large"><img src="https://pc-fan.net/wp/wp-content/uploads/2026/06/termgotchi03-800x450.webp" alt="第3回 | 育てた相棒に、英語を教わる。Term-gotchi の tg_talk を会話練習モードに育てた開発記 | UNIX Cafe" class="wp-image-44585"/></figure>
+<!-- /wp:image -->
+
+<!-- wp:paragraph -->
+<p>Term-gotchi 第3回は、会話機能 tg_talk を軽い英語教材として育てる編です。時間帯やコマンド文脈に応じた台詞、英英辞典風の説明、2ターンの会話例、theme と tone による整理を通して、<span class="swl-bg-color has-swl-pale-04-background-color">shell の日常に英語学習をそっと溶かし込む面白さを紹介します。</span></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>前回は、<strong>Term-gotchi</strong> に成長記録や分岐進化を足して、「育てて終わりにしない」ための仕組みを作りました。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p><code>tg_history</code> で振り返れるようになり、<code>sage</code> と <code>builder</code> への分岐も入って、相棒としての輪郭はかなりはっきりしてきました。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>でも、最初からこのアプリにはもうひとつの狙いがありました。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>それが、<span class="swl-bg-color has-swl-pale-04-background-color">英語学習の手触りを terminal の日常に溶かし込むこと</span>です。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>README にも最初から <code>English-learning flavor</code> と書いてはいたのですが、正直に言うと、第2回までの <code>tg_talk</code> はまだそこまで届いていませんでした。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"className":"wp-block-list -list-under-dashed"} -->
+<ul class="wp-block-list -list-under-dashed"><!-- wp:list-item -->
+<li>英語ではあるけれど、教材としては弱い</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>セリフは出るけれど、何を学べばいいかが分からない</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>会話のトーンや使いどころまでは見えない</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>しかも日本語訳を入れると、英語ではなく日本語を読んでしまう</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>そこで第3回では、<code>tg_talk</code> を<strong>ただの flavor text ではなく、軽い英語教材として機能するもの</strong>に育てました。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>今回は、Term-gotchi の会話機能をどうやって日常会話寄りにし、開発現場で使いやすい表現を増やし、英英辞典っぽい補助情報を持たせ、学習の視点で整理できるようにしたかを、実装の流れに沿って紹介します。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">最初の <code>tg_talk</code> は、英語ではあっても教材ではなかった</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>第2回までの <code>tg_talk</code> は、状態に応じて短い英語を返す仕組みでした。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>例えば、</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"className":"wp-block-list -list-under-dashed"} -->
+<ul class="wp-block-list -list-under-dashed"><!-- wp:list-item -->
+<li>空腹なら snack 系の台詞</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>mood が低ければ励まし系の台詞</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>form ごとに口調が少し違う</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>というように、相棒としての雰囲気は出ています。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>でも、英語教材として見ると足りない部分がありました。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>一番大きかったのは、<span class="swl-bg-color has-swl-pale-04-background-color">何を学んだらいいのかが残らない</span>ことです。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>例えば <code>take a look</code> という表現が出ても、これは casual なのか、同僚に使って自然なのか、<code>check this out</code> とどう違うのか、どう返したら会話として成立するのかが見えません。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>ただ英文が出るだけだと、「読む」ことはできても「使える」ところまでは行きにくい。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>ここで必要だったのは、生成 AI で長文会話を作ることではなく、<strong>短い表現に文脈を付けること</strong>でした。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">まずはセリフを、時間帯とコマンド文脈で変えるようにした</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>最初にやったのは、<code>tg_talk</code> の出力そのものを増やすことでした。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>それまでの分岐は、form と hunger / health / mood が中心でしたが、そこに <code>vocab_level</code>、時間帯、直近コマンドのカテゴリを足しました。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>これで、例えば同じ元気な状態でも、</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"className":"wp-block-list -list-under-dashed"} -->
+<ul class="wp-block-list -list-under-dashed"><!-- wp:list-item -->
+<li>朝に <code>git</code> を使ったあと</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>午後に <code>rg</code> や <code>ls</code> を使ったあと</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>夜に <code>npm</code> や <code>cargo</code> を使ったあと</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>で、出てくる台詞が変わるようになります。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>例えばこんな方向です。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"className":"wp-block-list -list-under-dashed"} -->
+<ul class="wp-block-list -list-under-dashed"><!-- wp:list-item -->
+<li><code>take a look at the diff</code></li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>kick off the build</code></li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>follow that clue</code></li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>ship it</code></li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>keep the momentum going</code></li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>この時点で、英語の中身がかなり「terminal の英語」「開発現場の英語」に寄ってきました。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>しかも、ただ technical な単語を並べるのではなく、<strong>アメリカ英語の職場会話っぽい言い回し</strong>を増やしたのがポイントです。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>例えば、</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"className":"wp-block-list -list-under-dashed"} -->
+<ul class="wp-block-list -list-under-dashed"><!-- wp:list-item -->
+<li><code>Sounds good.</code></li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>One sec.</code></li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>I'm on it.</code></li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>Could you take a look?</code></li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>We're in a good groove.</code></li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>のような、短くて実際によく出る返しを混ぜるようにしました。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>英語教材として考えるなら、こういう「頻出だが教科書っぽくない表現」がかなり重要です。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">日本語訳は、理解を助ける前に日本語脳を呼び戻してしまった</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>次にぶつかったのが、補助説明の出し方でした。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>最初は、学習用に <code>Meaning:</code> を日本語で付けていました。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>でも、実際に眺めてみると、これは思った以上に英語の流れを切ります。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>英語のセリフを読んだあとに日本語訳が出ると、理解は確かに楽になります。ただ、その瞬間に思考の主導権が日本語へ戻ってしまいます。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>これは短い学習には便利でも、<span class="swl-bg-color has-swl-pale-04-background-color">「英語で英語を受け取る」練習としては弱い。</span></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>そこで第3回では、<code>Meaning:</code> を<strong>英英辞典っぽい短い英語説明</strong>に切り替えました。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>例えば、</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"className":"wp-block-list -list-under-dashed"} -->
+<ul class="wp-block-list -list-under-dashed"><!-- wp:list-item -->
+<li><code>Used when you want to look at something for a short time.</code></li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>Useful when someone notices an important detail and you want to investigate it further.</code></li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>Good for talking about scope, focus, and using effort well.</code></li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>のように、訳ではなく<strong>英語でニュアンスを説明する</strong>形です。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>これで、読み手は日本語に戻らずに phrase、usage、nuance を英語のまま受け取れるようになります。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>しかも、難易度は <code>vocab_level</code> に応じて変わるようにしました。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"className":"wp-block-list -list-under-dashed"} -->
+<ul class="wp-block-list -list-under-dashed"><!-- wp:list-item -->
+<li><code>basic</code>: 短く平易な説明</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>intermediate</code>: 用途が分かる自然な説明</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>advanced</code>: 少し抽象度の高い説明</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>つまり、相棒の成長に合わせて、英語の説明文そのものも育つようにしたわけです。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading"><code>Phrase</code> だけでなく、<code>Example</code> の2ターン会話が必要だった</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>単語や言い回しを覚えるだけなら <code>Phrase:</code> があれば十分です。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>でも実際の会話では、「そのフレーズをどう返すか」が分からないと使えません。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>そこで追加したのが <code>Example:</code> です。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>最初は 1 文だけの例文にしていたのですが、これだと usage は分かっても会話の流れは見えません。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>最終的には、次の形にしました。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:kevinbatdorf/code-block-pro {"code":"Example:\nA: Could you take a look at this file with me?\nB: Sure. Let me check this out.","codeHTML":"\u003cpre class=\u0022shiki github-dark-dimmed\u0022 style=\u0022background-color: #22272e\u0022 tabindex=\u00220\u0022\u003e\u003ccode\u003e\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003eExample:\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003eA: Could you take a look at this file with me?\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003eB: Sure. Let me check this out.\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/pre\u003e","language":"tex","theme":"github-dark-dimmed","bgColor":"#22272e","textColor":"#adbac7","fontSize":".875rem","fontFamily":"Code-Pro-JetBrains-Mono","lineHeight":"1.25rem","clampFonts":false,"lineNumbers":false,"headerType":"headlights","disablePadding":false,"footerType":"none","enableMaxHeight":false,"seeMoreType":"","seeMoreString":"","seeMoreAfterLine":"","seeMoreTransition":false,"seeMoreCollapse":false,"seeMoreCollapseString":"","highlightingHover":false,"lineHighlightColor":"rgba(139, 186, 234, 0.2)","copyButton":true,"copyButtonType":"heroicons","copyButtonUseTextarea":true,"useTabs":false} -->
+<div class="wp-block-kevinbatdorf-code-block-pro" data-code-block-pro-font-family="Code-Pro-JetBrains-Mono" style="font-size:.875rem;font-family:Code-Pro-JetBrains-Mono,ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;line-height:1.25rem;--cbp-tab-width:2;tab-size:var(--cbp-tab-width, 2)"><span style="display:block;padding:16px 0 0 16px;margin-bottom:-1px;width:100%;text-align:left;background-color:#22272e"><svg xmlns="http://www.w3.org/2000/svg" width="54" height="14" viewBox="0 0 54 14"><g fill="none" fill-rule="evenodd" transform="translate(1 1)"><circle cx="6" cy="6" r="6" fill="#FF5F56" stroke="#E0443E" stroke-width=".5"></circle><circle cx="26" cy="6" r="6" fill="#FFBD2E" stroke="#DEA123" stroke-width=".5"></circle><circle cx="46" cy="6" r="6" fill="#27C93F" stroke="#1AAB29" stroke-width=".5"></circle></g></svg></span><span role="button" tabindex="0" style="color:#adbac7;display:none" aria-label="Copy" class="code-block-pro-copy-button"><pre class="code-block-pro-copy-button-pre" aria-hidden="true"><textarea class="code-block-pro-copy-button-textarea" tabindex="-1" aria-hidden="true" readonly>Example:
+A: Could you take a look at this file with me?
+B: Sure. Let me check this out.</textarea></pre><svg xmlns="http://www.w3.org/2000/svg" style="width:24px;height:24px" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path class="with-check" stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path><path class="without-check" stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg></span><pre class="shiki github-dark-dimmed" style="background-color: #22272e" tabindex="0"><code><span class="line"><span style="color: #ADBAC7">Example:</span></span>
+<span class="line"><span style="color: #ADBAC7">A: Could you take a look at this file with me?</span></span>
+<span class="line"><span style="color: #ADBAC7">B: Sure. Let me check this out.</span></span></code></pre></div>
+<!-- /wp:kevinbatdorf/code-block-pro -->
+
+<!-- wp:paragraph -->
+<p>この 2 ターン形式にしたことで、どう切り出すか、どう受けるか、どの程度くだけていいかが一気に分かりやすくなりました。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>英語学習として見ても、これはかなり効きます。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>なぜなら、単語単位ではなく<strong>会話の往復</strong>として頭に入るからです。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>しかも、この <code>A:</code> と <code>B:</code> は固定ではありません。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>同じ <code>Phrase:</code> でも、提案っぽく入る、相談っぽく入る、確認っぽく入る、など、複数パターンが回るようにしました。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>例えば <code>take a look</code> / <code>check this out</code> でも、</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"className":"wp-block-list -list-under-dashed"} -->
+<ul class="wp-block-list -list-under-dashed"><!-- wp:list-item -->
+<li><code>Could you take a look at this file with me?</code></li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>Do you want to take a quick look at this?</code></li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>Would you mind looking at this with me for a second?</code></li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>のように入り口を変えられます。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>これで「同じ意味のことを、少し違う空気で言う」練習ができます。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading"><code>Theme</code> と <code>Tone</code> を付けると、暗記ではなく整理になる</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>今回かなり良かった追加が、<code>Theme:</code> と <code>Tone:</code> です。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading"><code>Theme:</code></h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>これは、その表現が何の種類のコミュニケーションかを示します。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>例えば、</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"className":"wp-block-list -list-under-dashed"} -->
+<ul class="wp-block-list -list-under-dashed"><!-- wp:list-item -->
+<li><code>casual attention-directing phrases</code></li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>polite review requests</code></li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>scope control and prioritization</code></li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>signal-versus-noise thinking</code></li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>のように、「何をしている英語か」を短く示します。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading"><code>Tone:</code></h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>こちらは、その表現の距離感や温度感です。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"className":"wp-block-list -list-under-dashed"} -->
+<ul class="wp-block-list -list-under-dashed"><!-- wp:list-item -->
+<li><code>casual</code></li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>polite</code></li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>confident</code></li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>cautious</code></li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>collaborative</code></li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>focused</code></li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>などを表示します。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>この 2 つが入ると、英語学習の質がかなり変わります。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>なぜなら、<code>take a look</code> / <code>check this out</code> や <code>could you take a look?</code> / <code>want to take a pass?</code> のような似た表現でも、何をするフレーズなのか、どれくらい casual / polite なのかが見えるようになるからです。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>要するに、</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"className":"wp-block-list -list-under-dashed"} -->
+<ul class="wp-block-list -list-under-dashed"><!-- wp:list-item -->
+<li><code>Phrase</code> は表現そのもの</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>Theme</code> は使用場面</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>Tone</code> は距離感</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>Meaning</code> はニュアンス</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>Example</code> は実際の往復</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>という役割分担です。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>ここまで揃うと、<code>tg_talk</code> は単なるセリフ集ではなく、<strong>かなり実用寄りの micro lesson</strong> になります。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">生成 AI ではなく、rule-based にしたのにも理由がある</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>この改善を見て、「ここは AI で会話生成したほうが早いのでは」と思う人もいるかもしれません。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>もちろん、その方向もあります。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>ただ、今回あえて rule-based で積んだのには理由があります。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading">1. terminal の軽さを保ちたかった</h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>Term-gotchi は、日常の shell に自然に乗ってほしいアプリです。毎回 API を叩くような重さや不安定さを、いきなり前提にはしたくありませんでした。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading">2. 学習用には、制御できる繰り返しが強い</h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>自由生成は楽しいですが、教材としては振れ幅が大きくなります。その点、rule-based なら phrase の難易度、tone の分類、example の長さ、語彙レベルをかなり制御しやすい。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading">3. 使い回しの効く「型」を先に作りたかった</h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p><code>Phrase</code> / <code>Theme</code> / <code>Tone</code> / <code>Meaning</code> / <code>Example</code> という枠組みができると、あとは中身を増やしていけます。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>この枠組みは、AI を入れる前段としても有効です。<span class="swl-bg-color has-swl-pale-04-background-color">先に lesson format を決めておくことで、将来生成を混ぜても品質基準がぶれにくくなります。</span></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">今回の変更で、<code>tg_talk</code> は「会話練習の入り口」になった</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>第3回の変更で、<code>tg_talk</code> はかなり性格が変わりました。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>前までは、今の状態を英語で少し喋る程度の機能でした。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>今は、</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"className":"wp-block-list -list-under-dashed"} -->
+<ul class="wp-block-list -list-under-dashed"><!-- wp:list-item -->
+<li>form や気分による相棒らしさ</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>時間帯やコマンド文脈に応じた台詞</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>workplace English の phrase</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>英英辞典っぽい nuance</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>2ターンの会話例</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>theme</code> と <code>tone</code> による学習整理</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>をまとめて返せます。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>しかも、内容は固定ではなく、少しずつ回ります。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>毎回同じ英語を読むだけではなく、似た意味の言い換え、少し違う質問の入り方、少し違う返し方が混ざることで、<span class="swl-bg-color has-swl-pale-04-background-color">「英語を pattern として覚える」方向に寄せられました。</span></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>これは terminal アプリとしても面白いし、教材としてもかなり相性が良いと思っています。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>普段の <code>git</code> や <code>rg</code>、<code>cargo</code> のあとに、英語の micro dialogue が 1 つ出る。そのくらいの軽さなら、勉強として構えずに続けられます。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:kevinbatdorf/code-block-pro {"code":"13:01 UNIX_Cafe % tg_talk\nSounds good. What do you want to tackle next?\nPhrase: deliberate step / thoughtful move\nTheme: careful decision language\nTone: careful\nMeaning: Good for pushing back against random experimentation in favor of one intentional step.\nExample:\nA: Do you want to try a bunch of small changes?\nB: Not really. I think one thoughtful move is better.","codeHTML":"\u003cpre class=\u0022shiki github-dark-dimmed\u0022 style=\u0022background-color: #22272e\u0022 tabindex=\u00220\u0022\u003e\u003ccode\u003e\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003e13:01 UNIX_Cafe \u003c/span\u003e\u003cspan style=\u0022color: #768390\u0022\u003e% tg_talk\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003eSounds good. What do you want to tackle next?\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003ePhrase: deliberate step / thoughtful move\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003eTheme: careful decision language\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003eTone: careful\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003eMeaning: Good for pushing back against random experimentation in favor of one intentional step.\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003eExample:\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003eA: Do you want to try a bunch of small changes?\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003eB: Not really. I think one thoughtful move is better.\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/pre\u003e","language":"tex","theme":"github-dark-dimmed","bgColor":"#22272e","textColor":"#adbac7","fontSize":".875rem","fontFamily":"Code-Pro-JetBrains-Mono","lineHeight":"1.25rem","clampFonts":false,"lineNumbers":false,"headerType":"headlights","disablePadding":false,"footerType":"none","enableMaxHeight":false,"seeMoreType":"","seeMoreString":"","seeMoreAfterLine":"","seeMoreTransition":false,"seeMoreCollapse":false,"seeMoreCollapseString":"","highlightingHover":false,"lineHighlightColor":"rgba(139, 186, 234, 0.2)","copyButton":true,"copyButtonType":"heroicons","copyButtonUseTextarea":true,"useTabs":false} -->
+<div class="wp-block-kevinbatdorf-code-block-pro" data-code-block-pro-font-family="Code-Pro-JetBrains-Mono" style="font-size:.875rem;font-family:Code-Pro-JetBrains-Mono,ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;line-height:1.25rem;--cbp-tab-width:2;tab-size:var(--cbp-tab-width, 2)"><span style="display:block;padding:16px 0 0 16px;margin-bottom:-1px;width:100%;text-align:left;background-color:#22272e"><svg xmlns="http://www.w3.org/2000/svg" width="54" height="14" viewBox="0 0 54 14"><g fill="none" fill-rule="evenodd" transform="translate(1 1)"><circle cx="6" cy="6" r="6" fill="#FF5F56" stroke="#E0443E" stroke-width=".5"></circle><circle cx="26" cy="6" r="6" fill="#FFBD2E" stroke="#DEA123" stroke-width=".5"></circle><circle cx="46" cy="6" r="6" fill="#27C93F" stroke="#1AAB29" stroke-width=".5"></circle></g></svg></span><span role="button" tabindex="0" style="color:#adbac7;display:none" aria-label="Copy" class="code-block-pro-copy-button"><pre class="code-block-pro-copy-button-pre" aria-hidden="true"><textarea class="code-block-pro-copy-button-textarea" tabindex="-1" aria-hidden="true" readonly>13:01 UNIX_Cafe % tg_talk
+Sounds good. What do you want to tackle next?
+Phrase: deliberate step / thoughtful move
+Theme: careful decision language
+Tone: careful
+Meaning: Good for pushing back against random experimentation in favor of one intentional step.
+Example:
+A: Do you want to try a bunch of small changes?
+B: Not really. I think one thoughtful move is better.</textarea></pre><svg xmlns="http://www.w3.org/2000/svg" style="width:24px;height:24px" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path class="with-check" stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path><path class="without-check" stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg></span><pre class="shiki github-dark-dimmed" style="background-color: #22272e" tabindex="0"><code><span class="line"><span style="color: #ADBAC7">13:01 UNIX_Cafe </span><span style="color: #768390">% tg_talk</span></span>
+<span class="line"><span style="color: #ADBAC7">Sounds good. What do you want to tackle next?</span></span>
+<span class="line"><span style="color: #ADBAC7">Phrase: deliberate step / thoughtful move</span></span>
+<span class="line"><span style="color: #ADBAC7">Theme: careful decision language</span></span>
+<span class="line"><span style="color: #ADBAC7">Tone: careful</span></span>
+<span class="line"><span style="color: #ADBAC7">Meaning: Good for pushing back against random experimentation in favor of one intentional step.</span></span>
+<span class="line"><span style="color: #ADBAC7">Example:</span></span>
+<span class="line"><span style="color: #ADBAC7">A: Do you want to try a bunch of small changes?</span></span>
+<span class="line"><span style="color: #ADBAC7">B: Not really. I think one thoughtful move is better.</span></span></code></pre></div>
+<!-- /wp:kevinbatdorf/code-block-pro -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">次は、phrase を増やすより「切り替え」を育てたい</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>今回で、phrase の土台はかなりできました。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>なので次に面白くなりそうなのは、単純に候補数を増やすこと以上に、</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"className":"wp-block-list -list-under-dashed"} -->
+<ul class="wp-block-list -list-under-dashed"><!-- wp:list-item -->
+<li>同じ意味で casual / polite を切り替える</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>同じ場面で short / longer reply を切り替える</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>form ごとの personality と学習難易度をもう少し密接に結びつける</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>あたりです。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>つまり、英語表現を増やすだけでなく、<strong>どう使い分けるか</strong>まで相棒に持たせたい。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>Term-gotchi は育成アプリとして始めましたが、ここまで来ると<span class="swl-bg-color has-swl-pale-04-background-color">「小さな会話ドリルが shell の中に住んでいる」感触</span>が出てきました。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>相棒として育ち、ログとして残り、しかも少し英語が身に付く。第3回では、その方向に大きく舵を切れた気がします。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">次回は、Git と GitHub で育てます</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>ここまでで、Term-gotchi は機能としてもログとしても、だいぶ厚みが出てきました。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>そうなると次に気になるのは、<span class="swl-bg-color has-swl-pale-04-background-color">この変更の積み重ねを、どう安全に残して共有するか</span>です。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>第2回で <code>CHANGELOG.md</code> に開発の流れを残したように、ここからは <code>git</code> と GitHub を使って、Term-gotchi の成長そのものをバージョン管理していきます。コミットの粒度、履歴の残し方、他のマシンへの配布まで、これまでの「壊さず小さく育てる」やり方を、そのまま Git の世界に持ち込む予定です。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>次回は、その Git / GitHub 編としてお届けします。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading">Term-gotchi のソースコード公開</h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>Term-gotchi のソースコードは GitHub で公開しています。インストール用スクリプトや配布パッケージ作成用のスクリプトも含めて置いているので、zsh 製の小さなターミナルアプリを作るときの参考にもなると思います。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:loos/button {"hrefUrl":"https://github.com/k1117n-cmyk/termgotchi","isNewTab":true,"color":"blue","className":"is-style-btn_normal"} -->
+<div class="swell-block-button blue_ is-style-btn_normal"><a href="https://github.com/k1117n-cmyk/termgotchi" target="_blank" rel="noopener noreferrer" class="swell-block-button__link"><span>Term-gotchi を GitHub で見る</span></a></div>
+<!-- /wp:loos/button -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">最初から読みたい方へ</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p><span class="swl-bg-color has-swl-pale-04-background-color">今回は、Term-gotchi の <code>tg_talk</code> を軽い英語教材として育てました。</span></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>その出発点となる第1回では、zsh の中で育つ小さな相棒アプリとして、Term-gotchi を最初に動かすところまでを紹介しています。安全なシェル設計、<code>.zshrc</code> への追加方法、状態ファイルの扱いなど、今回の会話機能の土台になる部分です。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>👉 第1回「ターミナルで育つ相棒を作ろう。<span class="swl-bg-color has-swl-pale-04-background-color">zsh製ミニ育成アプリ『Term-gotchi』開発記」へ戻る</span></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:loos/post-list {"postID":"44414"} /-->
+
+<!-- wp:html -->
+[blog_parts id="32595"]
+<!-- /wp:html -->

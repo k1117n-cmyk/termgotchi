@@ -1,0 +1,59 @@
+04
+  A cute terminal pet character being carefully placed into a GitHub
+  repository, cozy developer desk atmosphere, dark terminal window, small
+  glowing command lines, git branch lines connecting files, README and
+  CHANGELOG documents, subtle GitHub-inspired interface elements, warm but
+  modern tech illustration, Japanese indie software blog style, friendly and
+  polished, soft lighting, clean composition, no text, no logos, 16:9 aspect
+  ratio
+
+03
+
+  A small cute digital pet living in a terminal, teaching English conversation
+  to a developer through tiny micro lessons, dark command-line screen,
+  friendly speech bubbles, subtle lesson cards for phrase, tone, meaning, and
+  example, cozy workspace, keyboard, soft monitor glow, warm and playful tech
+  illustration, polished Japanese blog thumbnail style, no readable text, no
+  logos, 16:9
+
+03
+  A cute terminal pet character acting as a friendly English conversation
+  tutor inside a dark terminal window, showing small speech bubbles with
+  simple English phrases, Phrase / Tone / Example style learning cards, cozy
+  developer desk atmosphere, keyboard and command line interface, soft glowing
+  text, warm modern tech illustration, Japanese indie software blog style,
+  friendly and polished, no readable text, no logos, clean composition, 16:9
+  aspect ratio
+
+02
+ A cute terminal pet character growing through stages from egg to sprout to
+  buddy, shown inside a dark terminal window with small history log entries
+  and progress bars, branching evolution paths labeled visually without
+  readable text, cozy developer desk atmosphere, command line interface, soft
+  glowing green and blue terminal light, warm modern tech illustration,
+  Japanese indie software blog thumbnail style, friendly and polished, no
+  readable text, no logos, clean composition, 16:9 aspect ratio
+
+02
+  A small cute digital pet living in a terminal, looking at its own growth
+  history timeline, with past forms like egg, sprout, and buddy appearing as
+  soft ghosted silhouettes, terminal progress bars, tiny log cards, branching
+  evolution paths, cozy keyboard workspace, dark command-line screen, warm
+  playful tech illustration, polished Japanese blog thumbnail style, no
+  readable text, no logos, 16:9
+
+01
+  A cute tiny digital pet being born inside a dark zsh terminal window, simple
+  command lines and status bars around it, cozy developer desk with keyboard,
+  soft monitor glow, first version of a terminal pet app, playful but clean
+  modern tech illustration, Japanese indie software blog thumbnail style,
+  friendly and polished, no readable text, no logos, 16:9 aspect ratio
+
+01
+  A small cute terminal pet living inside a command-line window, gaining
+  experience from everyday shell commands, with subtle progress bars, tiny
+  food and care icons, keyboard and developer workspace, dark terminal screen,
+  warm soft lighting, playful zsh mini pet app concept, polished modern tech
+  illustration, Japanese blog thumbnail style, no readable text, no logos,
+  clean composition, 16:9
+

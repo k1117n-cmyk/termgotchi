@@ -1,0 +1,832 @@
+第1回 |ターミナルで育つ相棒を作ろう。zsh製ミニ育成アプリ「Term-gotchi」開発記 | UNIX Cafe
+<!-- wp:image {"id":44493,"sizeSlug":"large","linkDestination":"none"} -->
+<figure class="wp-block-image size-large"><img src="https://pc-fan.net/wp/wp-content/uploads/2026/06/termgotchi01-800x450.webp" alt="第1回 |ターミナルで育つ相棒を作ろう。zsh製ミニ育成アプリ「Term-gotchi」開発記 | UNIX Cafe" class="wp-image-44493"/></figure>
+<!-- /wp:image -->
+
+<!-- wp:paragraph -->
+<p>zsh の中で育つ小さな相棒アプリ、Term-gotchi を作りました。普段のコマンド操作で経験値がたまり、世話もできるミニ育成アプリです。この記事では、シェル環境を壊さない安全な設計を意識しながら、設計から実装、そして配布できる形にまとめるまでの流れを紹介します。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p><span class="swl-bg-color has-swl-pale-04-background-color">ターミナルは、作業のための道具です。</span></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>でも、毎日開いている場所だからこそ、少しだけ遊び心があると、驚くほど愛着がわいてきます。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>今回作ったのは、<code>zsh</code> の中で育つ小さな相棒アプリ、<strong>Term-gotchi</strong> です。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p><code>ls</code> や <code>git</code> といった、いつものコマンドを打つたびに経験値がたまり、様子を見たり、ごはんをあげたり、ちょっと話しかけたりできます。しかも、普段のシェル環境を壊さないことを最優先にして、<code>macOS</code> や <code>Linux</code> の <code>zsh</code> 上で安全に動くように設計しました。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>この記事では、どんな発想でこのアプリを作ったのか、どんな順番で設計と実装を進めたのか、ターミナル初心者でも真似できる作り方の考え方、そして最後に、どうやって配布できる形まで整えたのかを、開発の流れに沿って紹介します。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>「<span class="swl-bg-color has-swl-pale-04-background-color">自分も何かターミナルアプリを作ってみたい</span>」</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>そんな気持ちが少しでも湧いてきたら、この企画は成功です。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">まず作りたかったもの</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>最初に欲しかったのは、高機能なゲームではありませんでした。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>欲しかったのは、毎日ターミナルを開くのが少し楽しくなること、コマンド操作に小さな達成感が乗ること、英語ベースの軽いメッセージで学習感も少し入ること、そして既存のシェル環境は絶対に壊さないことでした。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>その結果、<span class="swl-bg-color has-swl-pale-04-background-color">最初の MVP は次のような仕様に絞りました。</span>（ここでいう MVP は、まず動く最小版のことです）</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:kevinbatdorf/code-block-pro {"code":" /\u005c_/\u005c\u005c\n( o.o )\n \u003e ^ \u0026lt;\n\nTerm-gotchi\nForm: buddy\nLevel: 3\nXP: 31/40\nHunger: 50\nHealth: 100\nMood: 61\nCommands: 40\nVocab: 1\nMessage: I'm feeling productive!","codeHTML":"\u003cpre class=\u0022shiki github-dark-dimmed\u0022 style=\u0022background-color: #22272e\u0022 tabindex=\u00220\u0022\u003e\u003ccode\u003e\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #F47067\u0022\u003e/\u003c/span\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003e\u005c_\u003c/span\u003e\u003cspan style=\u0022color: #F47067\u0022\u003e/\u003c/span\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003e\u005c\u003c/span\u003e\u003cspan style=\u0022color: #F47067\u0022\u003e\u005c\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003e( o.o )\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #F47067\u0022\u003e\u0026gt;\u003c/span\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #F47067\u0022\u003e^\u003c/span\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #F47067\u0022\u003e\u0026lt;\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003eTerm\u003c/span\u003e\u003cspan style=\u0022color: #F47067\u0022\u003e-\u003c/span\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003egotchi\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003eForm: buddy\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003eLevel: \u003c/span\u003e\u003cspan style=\u0022color: #6CB6FF\u0022\u003e3\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003eXP: \u003c/span\u003e\u003cspan style=\u0022color: #6CB6FF\u0022\u003e31\u003c/span\u003e\u003cspan style=\u0022color: #F47067\u0022\u003e/\u003c/span\u003e\u003cspan style=\u0022color: #6CB6FF\u0022\u003e40\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003eHunger: \u003c/span\u003e\u003cspan style=\u0022color: #6CB6FF\u0022\u003e50\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003eHealth: \u003c/span\u003e\u003cspan style=\u0022color: #6CB6FF\u0022\u003e100\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003eMood: \u003c/span\u003e\u003cspan style=\u0022color: #6CB6FF\u0022\u003e61\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003eCommands: \u003c/span\u003e\u003cspan style=\u0022color: #6CB6FF\u0022\u003e40\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003eVocab: \u003c/span\u003e\u003cspan style=\u0022color: #6CB6FF\u0022\u003e1\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003eMessage: I\u003c/span\u003e\u003cspan style=\u0022color: #96D0FF\u0022\u003e\u0026#39;m feeling productive!\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/pre\u003e","language":"c","theme":"github-dark-dimmed","bgColor":"#22272e","textColor":"#adbac7","fontSize":".875rem","fontFamily":"Code-Pro-JetBrains-Mono","lineHeight":"1.25rem","clampFonts":false,"lineNumbers":false,"headerType":"headlights","disablePadding":false,"footerType":"none","enableMaxHeight":false,"seeMoreType":"","seeMoreString":"","seeMoreAfterLine":"","seeMoreTransition":false,"seeMoreCollapse":false,"seeMoreCollapseString":"","highlightingHover":false,"lineHighlightColor":"rgba(139, 186, 234, 0.2)","copyButton":true,"copyButtonType":"heroicons","copyButtonUseTextarea":true,"useTabs":false} -->
+<div class="wp-block-kevinbatdorf-code-block-pro" data-code-block-pro-font-family="Code-Pro-JetBrains-Mono" style="font-size:.875rem;font-family:Code-Pro-JetBrains-Mono,ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;line-height:1.25rem;--cbp-tab-width:2;tab-size:var(--cbp-tab-width, 2)"><span style="display:block;padding:16px 0 0 16px;margin-bottom:-1px;width:100%;text-align:left;background-color:#22272e"><svg xmlns="http://www.w3.org/2000/svg" width="54" height="14" viewBox="0 0 54 14"><g fill="none" fill-rule="evenodd" transform="translate(1 1)"><circle cx="6" cy="6" r="6" fill="#FF5F56" stroke="#E0443E" stroke-width=".5"></circle><circle cx="26" cy="6" r="6" fill="#FFBD2E" stroke="#DEA123" stroke-width=".5"></circle><circle cx="46" cy="6" r="6" fill="#27C93F" stroke="#1AAB29" stroke-width=".5"></circle></g></svg></span><span role="button" tabindex="0" style="color:#adbac7;display:none" aria-label="Copy" class="code-block-pro-copy-button"><pre class="code-block-pro-copy-button-pre" aria-hidden="true"><textarea class="code-block-pro-copy-button-textarea" tabindex="-1" aria-hidden="true" readonly> /\_/\\
+( o.o )
+ > ^ &lt;
+
+Term-gotchi
+Form: buddy
+Level: 3
+XP: 31/40
+Hunger: 50
+Health: 100
+Mood: 61
+Commands: 40
+Vocab: 1
+Message: I'm feeling productive!</textarea></pre><svg xmlns="http://www.w3.org/2000/svg" style="width:24px;height:24px" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path class="with-check" stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path><path class="without-check" stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg></span><pre class="shiki github-dark-dimmed" style="background-color: #22272e" tabindex="0"><code><span class="line"><span style="color: #ADBAC7"> </span><span style="color: #F47067">/</span><span style="color: #ADBAC7">\_</span><span style="color: #F47067">/</span><span style="color: #ADBAC7">\</span><span style="color: #F47067">\</span></span>
+<span class="line"><span style="color: #ADBAC7">( o.o )</span></span>
+<span class="line"><span style="color: #ADBAC7"> </span><span style="color: #F47067">&gt;</span><span style="color: #ADBAC7"> </span><span style="color: #F47067">^</span><span style="color: #ADBAC7"> </span><span style="color: #F47067">&lt;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color: #ADBAC7">Term</span><span style="color: #F47067">-</span><span style="color: #ADBAC7">gotchi</span></span>
+<span class="line"><span style="color: #ADBAC7">Form: buddy</span></span>
+<span class="line"><span style="color: #ADBAC7">Level: </span><span style="color: #6CB6FF">3</span></span>
+<span class="line"><span style="color: #ADBAC7">XP: </span><span style="color: #6CB6FF">31</span><span style="color: #F47067">/</span><span style="color: #6CB6FF">40</span></span>
+<span class="line"><span style="color: #ADBAC7">Hunger: </span><span style="color: #6CB6FF">50</span></span>
+<span class="line"><span style="color: #ADBAC7">Health: </span><span style="color: #6CB6FF">100</span></span>
+<span class="line"><span style="color: #ADBAC7">Mood: </span><span style="color: #6CB6FF">61</span></span>
+<span class="line"><span style="color: #ADBAC7">Commands: </span><span style="color: #6CB6FF">40</span></span>
+<span class="line"><span style="color: #ADBAC7">Vocab: </span><span style="color: #6CB6FF">1</span></span>
+<span class="line"><span style="color: #ADBAC7">Message: I</span><span style="color: #96D0FF">&#39;m feeling productive!</span></span></code></pre></div>
+<!-- /wp:kevinbatdorf/code-block-pro -->
+
+<!-- wp:list {"className":"wp-block-list -list-under-dashed"} -->
+<ul class="wp-block-list -list-under-dashed"><!-- wp:list-item -->
+<li><code>zsh</code> 専用</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>状態は <code>~/.termgotchi/state.json</code> に保存</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>tg_status</code> で様子を見る</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>tg_feed</code>、<code>tg_clean</code>、<code>tg_talk</code>、<code>tg_train</code> で世話をする</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>普段のコマンド実行で経験値が増える</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>レベルが上がると <code>egg -&gt; sprout -&gt; buddy</code> と進化する</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>ここで大事なのは、最初から全部を作ろうとしないことです。動く最小単位を先に決めておくと、設計も実装も、ぐっと進めやすくなります。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">最初にコードを書かず、設計から始めた理由</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>ターミナルアプリは、うまく作れば軽快ですが、<span class="swl-bg-color has-swl-pale-04-background-color">雑に作るとすぐに危険になります。</span></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>例えば、<code>.zshrc</code> を壊してシェル起動時にエラーを出したり、<code>preexec</code> / <code>precmd</code> を乱暴に上書きして他の設定と衝突したり、state ファイルの更新に失敗して JSON を壊したり、同じ hook が何度も登録されて経験値が二重に増えたりします。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>そこで今回は、実装に入る前に、次の文書を用意しました。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"className":"wp-block-list -list-under-dashed"} -->
+<ul class="wp-block-list -list-under-dashed"><!-- wp:list-item -->
+<li><code>docs/spec.md</code></li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>docs/architecture.md</code></li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>docs/implementation-plan.md</code></li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>NEXT.md</code></li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>役割はシンプルです。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"className":"wp-block-list -list-under-dashed"} -->
+<ul class="wp-block-list -list-under-dashed"><!-- wp:list-item -->
+<li><code>spec.md</code>: 何を作るか</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>architecture.md</code>: どう配置し、どう安全に動かすか</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>implementation-plan.md</code>: どの順番で作るか</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>NEXT.md</code>: 次回どこから再開するか</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>個人開発でも、この 4 つがあるだけで、驚くほど迷いが減ります。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">安全性の方針を最初に決めた</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>今回のアプリでいちばん重視したのは、<span class="swl-format-1"><span class="swl-bg-color has-swl-pale-04-background-color">見た目やゲーム性よりも安全性でした。</span></span></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>最初に決めたルールは、次の通りです。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading">1. データは <code>~/.termgotchi/</code> に閉じ込める</h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>アプリの実行ファイルも state も、すべてホーム配下の専用ディレクトリにまとめます。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:kevinbatdorf/code-block-pro {"code":"~/.termgotchi/\n  termgotchi.zsh\n  state.json\n  art/\n  backup/","codeHTML":"\u003cpre class=\u0022shiki github-dark-dimmed\u0022 style=\u0022background-color: #22272e\u0022 tabindex=\u00220\u0022\u003e\u003ccode\u003e\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003e~/.termgotchi/\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003e  termgotchi.zsh\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003e  state.json\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003e  art/\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003e  backup/\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/pre\u003e","language":"tex","theme":"github-dark-dimmed","bgColor":"#22272e","textColor":"#adbac7","fontSize":".875rem","fontFamily":"Code-Pro-JetBrains-Mono","lineHeight":"1.25rem","clampFonts":false,"lineNumbers":false,"headerType":"headlights","disablePadding":false,"footerType":"none","enableMaxHeight":false,"seeMoreType":"","seeMoreString":"","seeMoreAfterLine":"","seeMoreTransition":false,"seeMoreCollapse":false,"seeMoreCollapseString":"","highlightingHover":false,"lineHighlightColor":"rgba(139, 186, 234, 0.2)","copyButton":true,"copyButtonType":"heroicons","copyButtonUseTextarea":true,"useTabs":false} -->
+<div class="wp-block-kevinbatdorf-code-block-pro" data-code-block-pro-font-family="Code-Pro-JetBrains-Mono" style="font-size:.875rem;font-family:Code-Pro-JetBrains-Mono,ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;line-height:1.25rem;--cbp-tab-width:2;tab-size:var(--cbp-tab-width, 2)"><span style="display:block;padding:16px 0 0 16px;margin-bottom:-1px;width:100%;text-align:left;background-color:#22272e"><svg xmlns="http://www.w3.org/2000/svg" width="54" height="14" viewBox="0 0 54 14"><g fill="none" fill-rule="evenodd" transform="translate(1 1)"><circle cx="6" cy="6" r="6" fill="#FF5F56" stroke="#E0443E" stroke-width=".5"></circle><circle cx="26" cy="6" r="6" fill="#FFBD2E" stroke="#DEA123" stroke-width=".5"></circle><circle cx="46" cy="6" r="6" fill="#27C93F" stroke="#1AAB29" stroke-width=".5"></circle></g></svg></span><span role="button" tabindex="0" style="color:#adbac7;display:none" aria-label="Copy" class="code-block-pro-copy-button"><pre class="code-block-pro-copy-button-pre" aria-hidden="true"><textarea class="code-block-pro-copy-button-textarea" tabindex="-1" aria-hidden="true" readonly>~/.termgotchi/
+  termgotchi.zsh
+  state.json
+  art/
+  backup/</textarea></pre><svg xmlns="http://www.w3.org/2000/svg" style="width:24px;height:24px" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path class="with-check" stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path><path class="without-check" stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg></span><pre class="shiki github-dark-dimmed" style="background-color: #22272e" tabindex="0"><code><span class="line"><span style="color: #ADBAC7">~/.termgotchi/</span></span>
+<span class="line"><span style="color: #ADBAC7">  termgotchi.zsh</span></span>
+<span class="line"><span style="color: #ADBAC7">  state.json</span></span>
+<span class="line"><span style="color: #ADBAC7">  art/</span></span>
+<span class="line"><span style="color: #ADBAC7">  backup/</span></span></code></pre></div>
+<!-- /wp:kevinbatdorf/code-block-pro -->
+
+<!-- wp:paragraph -->
+<p>この形にしておくと、削除も簡単ですし、他の設定と混ざりません。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading">2. <code>.zshrc</code> には 1 行だけ追加する</h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>追記するのは、次の guarded source line だけです。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:kevinbatdorf/code-block-pro {"code":"[[ -f \u0022$HOME/.termgotchi/termgotchi.zsh\u0022 ]] \u0026\u0026 source \u0022$HOME/.termgotchi/termgotchi.zsh\u0022 # termgotchi","codeHTML":"\u003cpre class=\u0022shiki github-dark-dimmed\u0022 style=\u0022background-color: #22272e\u0022 tabindex=\u00220\u0022\u003e\u003ccode\u003e\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003e[\u0026#91; \u003c/span\u003e\u003cspan style=\u0022color: #F47067\u0022\u003e-f\u003c/span\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #96D0FF\u0022\u003e\u0026quot;\u003c/span\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003e$HOME\u003c/span\u003e\u003cspan style=\u0022color: #96D0FF\u0022\u003e/.termgotchi/termgotchi.zsh\u0026quot;\u003c/span\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003e \u0026#93;] \u0026amp;\u0026amp; \u003c/span\u003e\u003cspan style=\u0022color: #6CB6FF\u0022\u003esource\u003c/span\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #96D0FF\u0022\u003e\u0026quot;\u003c/span\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003e$HOME\u003c/span\u003e\u003cspan style=\u0022color: #96D0FF\u0022\u003e/.termgotchi/termgotchi.zsh\u0026quot;\u003c/span\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #768390\u0022\u003e# termgotchi\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/pre\u003e","language":"bash","theme":"github-dark-dimmed","bgColor":"#22272e","textColor":"#adbac7","fontSize":".875rem","fontFamily":"Code-Pro-JetBrains-Mono","lineHeight":"1.25rem","clampFonts":false,"lineNumbers":false,"headerType":"headlights","disablePadding":false,"footerType":"none","enableMaxHeight":false,"seeMoreType":"","seeMoreString":"","seeMoreAfterLine":"","seeMoreTransition":false,"seeMoreCollapse":false,"seeMoreCollapseString":"","highlightingHover":false,"lineHighlightColor":"rgba(139, 186, 234, 0.2)","copyButton":true,"copyButtonType":"heroicons","copyButtonUseTextarea":true,"useTabs":false} -->
+<div class="wp-block-kevinbatdorf-code-block-pro" data-code-block-pro-font-family="Code-Pro-JetBrains-Mono" style="font-size:.875rem;font-family:Code-Pro-JetBrains-Mono,ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;line-height:1.25rem;--cbp-tab-width:2;tab-size:var(--cbp-tab-width, 2)"><span style="display:block;padding:16px 0 0 16px;margin-bottom:-1px;width:100%;text-align:left;background-color:#22272e"><svg xmlns="http://www.w3.org/2000/svg" width="54" height="14" viewBox="0 0 54 14"><g fill="none" fill-rule="evenodd" transform="translate(1 1)"><circle cx="6" cy="6" r="6" fill="#FF5F56" stroke="#E0443E" stroke-width=".5"></circle><circle cx="26" cy="6" r="6" fill="#FFBD2E" stroke="#DEA123" stroke-width=".5"></circle><circle cx="46" cy="6" r="6" fill="#27C93F" stroke="#1AAB29" stroke-width=".5"></circle></g></svg></span><span role="button" tabindex="0" style="color:#adbac7;display:none" aria-label="Copy" class="code-block-pro-copy-button"><pre class="code-block-pro-copy-button-pre" aria-hidden="true"><textarea class="code-block-pro-copy-button-textarea" tabindex="-1" aria-hidden="true" readonly>[&#91; -f "$HOME/.termgotchi/termgotchi.zsh" &#93;] &amp;&amp; source "$HOME/.termgotchi/termgotchi.zsh" # termgotchi</textarea></pre><svg xmlns="http://www.w3.org/2000/svg" style="width:24px;height:24px" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path class="with-check" stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path><path class="without-check" stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg></span><pre class="shiki github-dark-dimmed" style="background-color: #22272e" tabindex="0"><code><span class="line"><span style="color: #ADBAC7">[&#91; </span><span style="color: #F47067">-f</span><span style="color: #ADBAC7"> </span><span style="color: #96D0FF">&quot;</span><span style="color: #ADBAC7">$HOME</span><span style="color: #96D0FF">/.termgotchi/termgotchi.zsh&quot;</span><span style="color: #ADBAC7"> &#93;] &amp;&amp; </span><span style="color: #6CB6FF">source</span><span style="color: #ADBAC7"> </span><span style="color: #96D0FF">&quot;</span><span style="color: #ADBAC7">$HOME</span><span style="color: #96D0FF">/.termgotchi/termgotchi.zsh&quot;</span><span style="color: #ADBAC7"> </span><span style="color: #768390"># termgotchi</span></span></code></pre></div>
+<!-- /wp:kevinbatdorf/code-block-pro -->
+
+<!-- wp:paragraph -->
+<p>1 行だけ、しかもコメント付き。これなら後から見つけやすく、アンインストールもしやすくなります。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading">3. <code>preexec()</code> や <code>precmd()</code> を直接上書きしない</h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>代わりに <code>add-zsh-hook</code> を使います。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:kevinbatdorf/code-block-pro {"code":"add-zsh-hook preexec tg_on_command_start\nadd-zsh-hook precmd tg_on_command_finish","codeHTML":"\u003cpre class=\u0022shiki github-dark-dimmed\u0022 style=\u0022background-color: #22272e\u0022 tabindex=\u00220\u0022\u003e\u003ccode\u003e\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #F69D50\u0022\u003eadd-zsh-hook\u003c/span\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #96D0FF\u0022\u003epreexec\u003c/span\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #96D0FF\u0022\u003etg_on_command_start\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #F69D50\u0022\u003eadd-zsh-hook\u003c/span\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #96D0FF\u0022\u003eprecmd\u003c/span\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #96D0FF\u0022\u003etg_on_command_finish\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/pre\u003e","language":"bash","theme":"github-dark-dimmed","bgColor":"#22272e","textColor":"#adbac7","fontSize":".875rem","fontFamily":"Code-Pro-JetBrains-Mono","lineHeight":"1.25rem","clampFonts":false,"lineNumbers":false,"headerType":"headlights","disablePadding":false,"footerType":"none","enableMaxHeight":false,"seeMoreType":"","seeMoreString":"","seeMoreAfterLine":"","seeMoreTransition":false,"seeMoreCollapse":false,"seeMoreCollapseString":"","highlightingHover":false,"lineHighlightColor":"rgba(139, 186, 234, 0.2)","copyButton":true,"copyButtonType":"heroicons","copyButtonUseTextarea":true,"useTabs":false} -->
+<div class="wp-block-kevinbatdorf-code-block-pro" data-code-block-pro-font-family="Code-Pro-JetBrains-Mono" style="font-size:.875rem;font-family:Code-Pro-JetBrains-Mono,ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;line-height:1.25rem;--cbp-tab-width:2;tab-size:var(--cbp-tab-width, 2)"><span style="display:block;padding:16px 0 0 16px;margin-bottom:-1px;width:100%;text-align:left;background-color:#22272e"><svg xmlns="http://www.w3.org/2000/svg" width="54" height="14" viewBox="0 0 54 14"><g fill="none" fill-rule="evenodd" transform="translate(1 1)"><circle cx="6" cy="6" r="6" fill="#FF5F56" stroke="#E0443E" stroke-width=".5"></circle><circle cx="26" cy="6" r="6" fill="#FFBD2E" stroke="#DEA123" stroke-width=".5"></circle><circle cx="46" cy="6" r="6" fill="#27C93F" stroke="#1AAB29" stroke-width=".5"></circle></g></svg></span><span role="button" tabindex="0" style="color:#adbac7;display:none" aria-label="Copy" class="code-block-pro-copy-button"><pre class="code-block-pro-copy-button-pre" aria-hidden="true"><textarea class="code-block-pro-copy-button-textarea" tabindex="-1" aria-hidden="true" readonly>add-zsh-hook preexec tg_on_command_start
+add-zsh-hook precmd tg_on_command_finish</textarea></pre><svg xmlns="http://www.w3.org/2000/svg" style="width:24px;height:24px" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path class="with-check" stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path><path class="without-check" stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg></span><pre class="shiki github-dark-dimmed" style="background-color: #22272e" tabindex="0"><code><span class="line"><span style="color: #F69D50">add-zsh-hook</span><span style="color: #ADBAC7"> </span><span style="color: #96D0FF">preexec</span><span style="color: #ADBAC7"> </span><span style="color: #96D0FF">tg_on_command_start</span></span>
+<span class="line"><span style="color: #F69D50">add-zsh-hook</span><span style="color: #ADBAC7"> </span><span style="color: #96D0FF">precmd</span><span style="color: #ADBAC7"> </span><span style="color: #96D0FF">tg_on_command_finish</span></span></code></pre></div>
+<!-- /wp:kevinbatdorf/code-block-pro -->
+
+<!-- wp:paragraph -->
+<p>これだけで、既存のシェル設定との衝突をかなり減らせます。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading">4. state 更新は temp file + mv</h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>JSON を直接上書きすると、途中で失敗したときに壊れてしまう可能性があります。そこで、いったん一時ファイルに書き出し、<code>jq empty</code> で中身を検証してから、最後に <code>mv</code> で置き換える流れにしました。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>この考え方は、初心者がスクリプトを書くときにも、かなり役立ちます。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">実装は「インストール」から始めた</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>いきなりゲーム部分から作りたくなりますが、今回はあえて逆にしました。最初に作ったのは <code>install.zsh</code> です。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>理由はシンプルで、<span class="swl-bg-color has-swl-pale-04-background-color">動く場所を先に整えておいた方が、その後の開発が圧倒的に楽になるからです。</span></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p><code>install.zsh</code> の役割は、次の通りです。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"className":"wp-block-list -list-under-dashed"} -->
+<ul class="wp-block-list -list-under-dashed"><!-- wp:list-item -->
+<li><code>jq</code> の存在確認</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>~/.termgotchi/</code> の作成</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>termgotchi.zsh</code> と <code>art/</code> のコピー</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>state.json</code> の初期化</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>.zshrc</code> に 1 行だけ追記</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>既存 <code>state.json</code> が壊れていれば <code>backup/</code> に退避して再生成</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>この段階で、もうアプリの器はできあがっています。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">最初の到達点は <code>tg_status</code></h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>次に作ったのが、<code>termgotchi.zsh</code> の最初の runnable 版です。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>ここでの目標は、はっきりしていました。<span class="swl-bg-color has-swl-pale-04-background-color">インストールしたあとに <code>tg_status</code> が動くことです。</span></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>実装したのは、主に次の関数です。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"className":"wp-block-list -list-under-dashed"} -->
+<ul class="wp-block-list -list-under-dashed"><!-- wp:list-item -->
+<li><code>tg_now</code></li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>tg_require_dependencies</code></li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>tg_require_state</code></li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>tg_load_state</code></li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>tg_render_ascii</code></li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>tg_get_status_message</code></li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>tg_status</code></li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>先に表示だけを作ると、state の構造が自然と見えてきます。そして、いまどこまで完成しているかが目に見えるので、開発のモチベーションも上がります。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">世話コマンドを足して、アプリらしさを出した</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>状態表示だけだと、まだ読み取り専用のツールです。そこで次に追加したのが、<span class="swl-bg-color has-swl-pale-04-background-color"><code>tg_feed</code>、<code>tg_clean</code>、<code>tg_talk</code>、<code>tg_train</code> です。</span></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>それぞれの役割は、次の通りです。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"className":"wp-block-list -list-under-dashed"} -->
+<ul class="wp-block-list -list-under-dashed"><!-- wp:list-item -->
+<li><code>tg_feed</code>: hunger と mood を上げる</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>tg_clean</code>: health と mood を上げる</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>tg_talk</code>: 今の状態に応じた短いメッセージを返す</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>tg_train</code>: XP と vocab を上げる</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>ここで大事だったのは、1 つのコマンドが state をどう更新するのかを、はっきり決めておくことでした。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>例えば <code>tg_feed</code> なら、hunger が 95 以上なら受け付けず、それ以外は <code>+20</code>、mood は <code>+3</code>、値は <code>0..100</code> に clamp する。こんなふうに、ルールを先に固定しています。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>ルールが曖昧なままだと、後から表示と保存ロジックがズレて、壊れやすくなります。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">普段のコマンドで成長する仕組みを入れた</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>ここからが Term-gotchi の中核です。<span class="swl-bg-color has-swl-pale-04-background-color">通常のコマンドで経験値が増える仕組みを、<code>preexec</code> と <code>precmd</code> の hook で実装しました。</span></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>流れは、こうです。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"ordered":true,"className":"wp-block-list -list-under-dashed"} -->
+<ol class="wp-block-list -list-under-dashed"><!-- wp:list-item -->
+<li><code>preexec</code> で実行前のコマンド名を取得</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>precmd</code> で終了後に経験値や回数を更新</li>
+<!-- /wp:list-item --></ol>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>経験値のルールは、シンプルにしています。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"className":"wp-block-list -list-under-dashed"} -->
+<ul class="wp-block-list -list-under-dashed"><!-- wp:list-item -->
+<li><code>ls</code>, <code>cd</code>, <code>pwd</code>: <code>+1</code></li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>git</code>, <code>vi</code>, <code>vim</code>, <code>nvim</code>, <code>code</code>: <code>+2</code></li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>make</code>, <code>npm</code>, <code>pnpm</code>, <code>yarn</code>, <code>cargo</code>: <code>+3</code></li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>その他の通常コマンド: <code>+1</code></li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>さらに、初めて出てきたコマンド名には、<code>+2</code> のボーナスを付けました。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>これだけでも、いつもの作業に、ちょっとした意味が生まれます。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">ただし、全部のコマンドを数えるわけではない</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>ここは、かなり慎重に作りました。例えば次のようなものは、<span class="swl-bg-color has-swl-pale-04-background-color">作業の進捗というより、shell の設定や内部操作です。</span></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"className":"wp-block-list -list-under-dashed"} -->
+<ul class="wp-block-list -list-under-dashed"><!-- wp:list-item -->
+<li><code>source</code></li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>.</code></li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>alias</code></li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>setopt</code></li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>export</code></li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>history</code></li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>tg_*</code></li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>こうしたものは、passive XP の対象外にしています。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>一方で、次のような wrapper は、中身まで見ます。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"className":"wp-block-list -list-under-dashed"} -->
+<ul class="wp-block-list -list-under-dashed"><!-- wp:list-item -->
+<li><code>command ls</code></li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>builtin pwd</code></li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>noglob ls</code></li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>つまり、「wrapper 自体ではなく、その後ろにある実コマンドを数える」という整理です。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>ただし <code>sudo</code> は、中身を安全に解釈しづらいので、今のところ特別扱いはしていません。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>こういう境界の整理は、一見地味ですが、実際の使い勝手にはかなり効いてきます。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">レベルアップと進化を入れる</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>経験値が増えるだけだと、ただの数字の変化にとどまります。<span class="swl-bg-color has-swl-pale-04-background-color">そこで次に入れたのが、レベルアップと進化です。</span></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>今回のルールは、次の通りです。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"className":"wp-block-list -list-under-dashed"} -->
+<ul class="wp-block-list -list-under-dashed"><!-- wp:list-item -->
+<li><code>egg -&gt; sprout</code> when <code>level &gt;= 2</code></li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>sprout -&gt; buddy</code> when <code>level &gt;= 3</code> and <code>unique_commands.length &gt;= 10</code></li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>つまり、同じコマンドを打ち続けるだけでなく、<strong>いろいろなコマンドを使うほど成長しやすい</strong>設計です。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>このあたりは、ターミナルを日常的に使う人ほど、気持ちよく感じられるポイントだと思います。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">idle decay で「放っておくと少しさびしい」を入れた</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>育成アプリらしさを出すために、<span class="swl-bg-color has-swl-pale-04-background-color">最小限の idle decay も入れました。</span></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>ルールは、次のような段階式です。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"className":"wp-block-list -list-under-dashed"} -->
+<ul class="wp-block-list -list-under-dashed"><!-- wp:list-item -->
+<li>6 時間以上: hunger <code>-10</code></li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>12 時間以上: hunger <code>-20</code>, mood <code>-5</code></li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>24 時間以上: hunger <code>-30</code>, mood <code>-10</code></li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>ただし、ここでも安全性を優先して、次の制限を付けました。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"className":"wp-block-list -list-under-dashed"} -->
+<ul class="wp-block-list -list-under-dashed"><!-- wp:list-item -->
+<li><code>tg_status</code> では decay を適用しない</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>health</code> は減らさない</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>同じ idle window で何度も減衰しないよう <code>last_decay_at</code> を使う</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>「ゲームらしさ」と「壊れにくさ」のバランスを取るのが、この段階のポイントでした。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">アンインストールまで作ると、安心して試せる</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p><span class="swl-bg-color has-swl-pale-04-background-color">地味ですが、かなり重要だったのが <code>uninstall.zsh</code> です。</span></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>これがあるおかげで、次の撤去が簡単にできます。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"className":"wp-block-list -list-under-dashed"} -->
+<ul class="wp-block-list -list-under-dashed"><!-- wp:list-item -->
+<li><code>.zshrc</code> から Term-gotchi の 1 行だけ外す</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>~/.termgotchi/</code> を削除する</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>新しいものを試したい人ほど、「ちゃんと元に戻せるのか？」を気にします。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>だからこそ、アンインストール手順まで含めて完成させることは、配布できるアプリにするうえで、とても大切です。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">さらに、他のマシンに持っていけるようにした</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>開発が一段落したあと、<span class="swl-bg-color has-swl-pale-04-background-color">配布用のディレクトリも作りました。</span></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>構成は、こんな感じです。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:kevinbatdorf/code-block-pro {"code":"dist/termgotchi-portable/\n  README.md\n  install.zsh\n  uninstall.zsh\n  termgotchi.zsh\n  art/\n  docs/","codeHTML":"\u003cpre class=\u0022shiki github-dark-dimmed\u0022 style=\u0022background-color: #22272e\u0022 tabindex=\u00220\u0022\u003e\u003ccode\u003e\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003edist/termgotchi-portable/\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003e  README.md\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003e  install.zsh\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003e  uninstall.zsh\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003e  termgotchi.zsh\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003e  art/\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003e  docs/\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/pre\u003e","language":"tex","theme":"github-dark-dimmed","bgColor":"#22272e","textColor":"#adbac7","fontSize":".875rem","fontFamily":"Code-Pro-JetBrains-Mono","lineHeight":"1.25rem","clampFonts":false,"lineNumbers":false,"headerType":"headlights","disablePadding":false,"footerType":"none","enableMaxHeight":false,"seeMoreType":"","seeMoreString":"","seeMoreAfterLine":"","seeMoreTransition":false,"seeMoreCollapse":false,"seeMoreCollapseString":"","highlightingHover":false,"lineHighlightColor":"rgba(139, 186, 234, 0.2)","copyButton":true,"copyButtonType":"heroicons","copyButtonUseTextarea":true,"useTabs":false} -->
+<div class="wp-block-kevinbatdorf-code-block-pro" data-code-block-pro-font-family="Code-Pro-JetBrains-Mono" style="font-size:.875rem;font-family:Code-Pro-JetBrains-Mono,ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;line-height:1.25rem;--cbp-tab-width:2;tab-size:var(--cbp-tab-width, 2)"><span style="display:block;padding:16px 0 0 16px;margin-bottom:-1px;width:100%;text-align:left;background-color:#22272e"><svg xmlns="http://www.w3.org/2000/svg" width="54" height="14" viewBox="0 0 54 14"><g fill="none" fill-rule="evenodd" transform="translate(1 1)"><circle cx="6" cy="6" r="6" fill="#FF5F56" stroke="#E0443E" stroke-width=".5"></circle><circle cx="26" cy="6" r="6" fill="#FFBD2E" stroke="#DEA123" stroke-width=".5"></circle><circle cx="46" cy="6" r="6" fill="#27C93F" stroke="#1AAB29" stroke-width=".5"></circle></g></svg></span><span role="button" tabindex="0" style="color:#adbac7;display:none" aria-label="Copy" class="code-block-pro-copy-button"><pre class="code-block-pro-copy-button-pre" aria-hidden="true"><textarea class="code-block-pro-copy-button-textarea" tabindex="-1" aria-hidden="true" readonly>dist/termgotchi-portable/
+  README.md
+  install.zsh
+  uninstall.zsh
+  termgotchi.zsh
+  art/
+  docs/</textarea></pre><svg xmlns="http://www.w3.org/2000/svg" style="width:24px;height:24px" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path class="with-check" stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path><path class="without-check" stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg></span><pre class="shiki github-dark-dimmed" style="background-color: #22272e" tabindex="0"><code><span class="line"><span style="color: #ADBAC7">dist/termgotchi-portable/</span></span>
+<span class="line"><span style="color: #ADBAC7">  README.md</span></span>
+<span class="line"><span style="color: #ADBAC7">  install.zsh</span></span>
+<span class="line"><span style="color: #ADBAC7">  uninstall.zsh</span></span>
+<span class="line"><span style="color: #ADBAC7">  termgotchi.zsh</span></span>
+<span class="line"><span style="color: #ADBAC7">  art/</span></span>
+<span class="line"><span style="color: #ADBAC7">  docs/</span></span></code></pre></div>
+<!-- /wp:kevinbatdorf/code-block-pro -->
+
+<!-- wp:paragraph -->
+<p>さらに、<code>dist/termgotchi-portable.zip</code> と <code>dist/termgotchi-portable.tar.gz</code> も用意して、他の Mac や PC にそのまま渡せる形にしました。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>ここまでやると、「個人の作業メモ」ではなく、ちゃんとした小さなアプリになります。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">実際にやってよかったこと</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p><span class="swl-bg-color has-swl-pale-04-background-color">今回の開発で、特によかったのは次の 5 つです。</span></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading">1. 最初に仕様を書いたこと</h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>何を作るかが最初に固まっていたので、途中で迷いにくくなりました。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading">2. 安全性を先に決めたこと</h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>シェルまわりは、後から安全に直す方が大変です。最初に制約を決めておいたのが効きました。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading">3. install → status → care → passive growth の順に積んだこと</h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>機能の依存関係に沿って進めたので、毎回「動く区切り」がありました。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading">4. 隔離した <code>HOME</code> で検証したこと</h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>本物の <code>~/.zshrc</code> を汚さずに検証できたので、安心して試せました。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading">5. 配布と撤去まで含めて作ったこと</h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>使う人の目線に立つと、導入と削除のしやすさは、機能そのものと同じくらい大事です。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">ターミナル初心者に伝えたいこと</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>「ターミナルで何か作る」と聞くと、難しそうに感じるかもしれません。でも実際には、この Term-gotchi も、最初から複雑だったわけではありません。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>最初はただ、<span class="swl-bg-color has-swl-pale-04-background-color">ファイルを 1 つ置く、状態を JSON で持つ、コマンドを 1 つ作る、それを少しずつ増やす、という積み重ねです。</span></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>ターミナルアプリの面白さは、GUI よりも部品が少なく、構造が見えやすいところにあります。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>だからこそ、シェル、ファイル、JSON、フック、インストーラといった UNIX 的な考え方を学ぶには、とても良い題材です。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>もし「自分も作ってみたい」と思ったら、まずは次のようなものから始めるのがおすすめです。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"className":"wp-block-list -list-under-dashed"} -->
+<ul class="wp-block-list -list-under-dashed"><!-- wp:list-item -->
+<li>今日の作業回数を数えるスクリプト</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>よく使うコマンドを集計するツール</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>シェル起動時に一言出すだけの小さな相棒</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>JSON を使ったミニ日記ツール</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>最初は小さくても、まったく問題ありません。<span class="swl-bg-color has-swl-pale-04-background-color">小さなものでも、毎日使っていると愛着がわいてきます。</span></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>ちょっとした作品を、ひとつ完成させた気分になれます。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">まとめ</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>Term-gotchi は、見た目こそ小さな遊びですが、中身はかなりまじめに作っています。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"className":"wp-block-list -list-under-dashed"} -->
+<ul class="wp-block-list -list-under-dashed"><!-- wp:list-item -->
+<li><code>.zshrc</code> に 1 行だけ追加する</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>state は安全に保存する</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>hook は衝突しにくい形で登録する</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>導入も削除も簡単にする</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>他のマシンにも持っていけるようにする</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>こうした積み重ねで、<strong>日常に気軽に入れられるターミナルアプリ</strong>になりました。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>もしこの記事を読んで、「<span class="swl-bg-color has-swl-pale-04-background-color">ターミナルって、作業だけの場所じゃないかもしれない</span>」と思ってもらえたら、うれしいです。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>そして次はぜひ、自分だけの小さなターミナルアプリを作ってみてください。最初の 1 本は、思っているよりずっと簡単に、そして楽しみながら作れます。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>Term-gotchi のソースコードは GitHub で公開しています。インストール用スクリプトや配布パッケージ作成用のスクリプトも含めて置いているので、zsh 製の小さなターミナルアプリを作るときの参考にもなると思います。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:buttons -->
+<div class="wp-block-buttons"><!-- wp:button -->
+<div class="wp-block-button"><a class="wp-block-button__link wp-element-button" href="https://github.com/k1117n-cmyk/termgotchi" target="_blank" rel="noreferrer noopener">Term-gotchi を GitHub で見る</a></div>
+<!-- /wp:button --></div>
+<!-- /wp:buttons -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">次回は、成長記録を足していきます</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p><span class="swl-bg-color has-swl-pale-04-background-color">Term-gotchi は、zsh の中で育つ小さな相棒として、ようやく動き始めました。</span></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>次回は、ここに成長記録と分岐進化を足します。育ったあとに何が起きたのかを見返せるようにして、ただのミニアプリから、長く触りたくなる道具へと育てていきます。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>👉 第2回「育てて終わりにしない。<span class="swl-bg-color has-swl-pale-04-background-color">Term-gotchi に成長記録を足した開発記」へ進む</span></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:loos/post-list {"postID":"44464"} /-->
+
+<!-- wp:html -->
+[blog_parts id="32595"]
+<!-- /wp:html -->

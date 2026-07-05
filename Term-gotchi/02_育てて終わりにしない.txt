@@ -1,0 +1,828 @@
+第2回 | 育てて終わりにしない。Term-gotchi に成長記録を足した開発記 | UNIX Cafe
+<!-- wp:image {"id":44495,"sizeSlug":"large","linkDestination":"none"} -->
+<figure class="wp-block-image size-large"><img src="https://pc-fan.net/wp/wp-content/uploads/2026/06/termgotchi02-800x450.webp" alt="第2回 | 育てて終わりにしない。Term-gotchi に成長記録を足した開発記 | UNIX Cafe" class="wp-image-44495"/></figure>
+<!-- /wp:image -->
+
+<!-- wp:paragraph -->
+<p>Term-gotchi 第2回は、成長記録と分岐進化の追加編です。tg_history、sage / builder、専用コマンド、CHANGELOG.md を通して、<span class="swl-bg-color has-swl-pale-04-background-color">CLI ツールに「変化の履歴」を持たせる面白さを紹介します。</span></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>前回は、<code>zsh</code> の中で育つ小さな相棒アプリ <strong>Term-gotchi</strong> を作るところまでを書きました。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p><code>ls</code> や <code>cd</code>、<code>git</code> といった普段のコマンドが経験値になって、<code>egg -&gt; sprout -&gt; buddy</code> と進化していく。そこまでは、ミニ育成アプリとして、かなり素直な形です。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>でも、実際に使い始めると、次のような疑問が出てきました。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"className":"wp-block-list -list-under-dashed"} -->
+<ul class="wp-block-list -list-under-dashed"><!-- wp:list-item -->
+<li>いま何が起きて成長したのか、あとから追えるようにしたい</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>進化しても見た目以外の違いが少ない</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>続けて育てたくなる分岐がほしい</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>開発の経緯そのものも、あとから参照できるようにしたい</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>そこで第2回では、Term-gotchi に<strong>成長記録</strong>と<strong>分岐進化</strong>、そして<strong>履歴として残る開発ログ</strong>を足しました。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>今回は「<span class="swl-bg-color has-swl-pale-04-background-color">どうやって最初の MVP を、長く触りたくなる道具に育てたか</span>」を中心に紹介します。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">MVP の次に必要だったのは、派手な機能ではなく記録だった</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p><span class="swl-bg-color has-swl-pale-04-background-color">最初の版は、ちゃんと遊べました。</span></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"className":"wp-block-list -list-under-dashed"} -->
+<ul class="wp-block-list -list-under-dashed"><!-- wp:list-item -->
+<li><code>tg_status</code> で状態を見る</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>tg_feed</code> や <code>tg_train</code> で世話をする</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>普段のコマンドで経験値が増える</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>egg</code> から <code>sprout</code>、<code>buddy</code> へ進化する</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>ただ、しばらく使ってみると、数字だけでは物足りなくなってきます。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>例えば、</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"className":"wp-block-list -list-under-dashed"} -->
+<ul class="wp-block-list -list-under-dashed"><!-- wp:list-item -->
+<li>さっき何の操作でレベルが上がったのか</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>進化した瞬間のメッセージをあとから見返せない</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>コマンドが増えているのに、育ち方の違いが見えにくい</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>という、「遊びの手触り」の弱さがありました。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>ここで面白かったのは、次に必要だったのが AI でも、画面を豪華にすることでもなく、ログだったことです。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>育成アプリにとって、記録はかなり重要です。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>なぜなら、<span class="swl-bg-color has-swl-pale-04-background-color">育つという現象は「変化の履歴」が見えて、初めて気持ちよくなるからです。</span></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">まず <code>tg_status</code> を見やすくした</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p><span class="swl-bg-color has-swl-pale-04-background-color">最初にやったのは、記録専用の機能ではなく、状態表示そのものの改善でした。</span>実際にしばらく使っていると、Term-gotchi はこのような状態になりました。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>ASCII アートも含めて表示されるので、数字だけでなく、いまの姿も一緒に確認できます。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:kevinbatdorf/code-block-pro {"code":"  ___\n (o o)\n /|#|\u005c\n  / \u005c\n _| |_\n\nTerm-gotchi\nForm: builder\nLevel: 28\nXP: [#####.....] 144/290\nHunger: [##########] 100\nHealth: [##########] 100\nMood: [##########] 100\nCommands: 2969 total / 108 unique\nVocab: 10\nTrait: tough hands-on finisher\nFinal form reached\nMessage: Sounds good. What do you want to tackle next?","codeHTML":"\u003cpre class=\u0022shiki github-dark-dimmed\u0022 style=\u0022background-color: #22272e\u0022 tabindex=\u00220\u0022\u003e\u003ccode\u003e\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003e  ___\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003e (o o)\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #F47067\u0022\u003e/|\u003c/span\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003e#\u003c/span\u003e\u003cspan style=\u0022color: #F47067\u0022\u003e|\u005c\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003e  \u003c/span\u003e\u003cspan style=\u0022color: #F47067\u0022\u003e/\u003c/span\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #F47067\u0022\u003e\u005c\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003e _\u003c/span\u003e\u003cspan style=\u0022color: #F47067\u0022\u003e|\u003c/span\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #F47067\u0022\u003e|\u003c/span\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003e_\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003eTerm\u003c/span\u003e\u003cspan style=\u0022color: #F47067\u0022\u003e-\u003c/span\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003egotchi\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003eForm: builder\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003eLevel: \u003c/span\u003e\u003cspan style=\u0022color: #6CB6FF\u0022\u003e28\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003eXP: \u0026#91;#####.....\u0026#93; \u003c/span\u003e\u003cspan style=\u0022color: #6CB6FF\u0022\u003e144\u003c/span\u003e\u003cspan style=\u0022color: #F47067\u0022\u003e/\u003c/span\u003e\u003cspan style=\u0022color: #6CB6FF\u0022\u003e290\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003eHunger: \u0026#91;##########\u0026#93; \u003c/span\u003e\u003cspan style=\u0022color: #6CB6FF\u0022\u003e100\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003eHealth: \u0026#91;##########\u0026#93; \u003c/span\u003e\u003cspan style=\u0022color: #6CB6FF\u0022\u003e100\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003eMood: \u0026#91;##########\u0026#93; \u003c/span\u003e\u003cspan style=\u0022color: #6CB6FF\u0022\u003e100\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003eCommands: \u003c/span\u003e\u003cspan style=\u0022color: #6CB6FF\u0022\u003e2969\u003c/span\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003e total \u003c/span\u003e\u003cspan style=\u0022color: #F47067\u0022\u003e/\u003c/span\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #6CB6FF\u0022\u003e108\u003c/span\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003e unique\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003eVocab: \u003c/span\u003e\u003cspan style=\u0022color: #6CB6FF\u0022\u003e10\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003eTrait: tough hands\u003c/span\u003e\u003cspan style=\u0022color: #F47067\u0022\u003e-\u003c/span\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003eon finisher\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003eFinal form reached\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003eMessage: Sounds good. What \u003c/span\u003e\u003cspan style=\u0022color: #F47067\u0022\u003edo\u003c/span\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003e you want to tackle next\u003c/span\u003e\u003cspan style=\u0022color: #F47067\u0022\u003e?\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/pre\u003e","language":"c","theme":"github-dark-dimmed","bgColor":"#22272e","textColor":"#adbac7","fontSize":".875rem","fontFamily":"Code-Pro-JetBrains-Mono","lineHeight":"1.25rem","clampFonts":false,"lineNumbers":false,"headerType":"headlights","disablePadding":false,"footerType":"none","enableMaxHeight":false,"seeMoreType":"","seeMoreString":"","seeMoreAfterLine":"","seeMoreTransition":false,"seeMoreCollapse":false,"seeMoreCollapseString":"","highlightingHover":false,"lineHighlightColor":"rgba(139, 186, 234, 0.2)","copyButton":true,"copyButtonType":"heroicons","copyButtonUseTextarea":true,"useTabs":false} -->
+<div class="wp-block-kevinbatdorf-code-block-pro" data-code-block-pro-font-family="Code-Pro-JetBrains-Mono" style="font-size:.875rem;font-family:Code-Pro-JetBrains-Mono,ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;line-height:1.25rem;--cbp-tab-width:2;tab-size:var(--cbp-tab-width, 2)"><span style="display:block;padding:16px 0 0 16px;margin-bottom:-1px;width:100%;text-align:left;background-color:#22272e"><svg xmlns="http://www.w3.org/2000/svg" width="54" height="14" viewBox="0 0 54 14"><g fill="none" fill-rule="evenodd" transform="translate(1 1)"><circle cx="6" cy="6" r="6" fill="#FF5F56" stroke="#E0443E" stroke-width=".5"></circle><circle cx="26" cy="6" r="6" fill="#FFBD2E" stroke="#DEA123" stroke-width=".5"></circle><circle cx="46" cy="6" r="6" fill="#27C93F" stroke="#1AAB29" stroke-width=".5"></circle></g></svg></span><span role="button" tabindex="0" style="color:#adbac7;display:none" aria-label="Copy" class="code-block-pro-copy-button"><pre class="code-block-pro-copy-button-pre" aria-hidden="true"><textarea class="code-block-pro-copy-button-textarea" tabindex="-1" aria-hidden="true" readonly>  ___
+ (o o)
+ /|#|\
+  / \
+ _| |_
+
+Term-gotchi
+Form: builder
+Level: 28
+XP: &#91;#####.....&#93; 144/290
+Hunger: &#91;##########&#93; 100
+Health: &#91;##########&#93; 100
+Mood: &#91;##########&#93; 100
+Commands: 2969 total / 108 unique
+Vocab: 10
+Trait: tough hands-on finisher
+Final form reached
+Message: Sounds good. What do you want to tackle next?</textarea></pre><svg xmlns="http://www.w3.org/2000/svg" style="width:24px;height:24px" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path class="with-check" stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path><path class="without-check" stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg></span><pre class="shiki github-dark-dimmed" style="background-color: #22272e" tabindex="0"><code><span class="line"><span style="color: #ADBAC7">  ___</span></span>
+<span class="line"><span style="color: #ADBAC7"> (o o)</span></span>
+<span class="line"><span style="color: #ADBAC7"> </span><span style="color: #F47067">/|</span><span style="color: #ADBAC7">#</span><span style="color: #F47067">|\</span></span>
+<span class="line"><span style="color: #ADBAC7">  </span><span style="color: #F47067">/</span><span style="color: #ADBAC7"> </span><span style="color: #F47067">\</span></span>
+<span class="line"><span style="color: #ADBAC7"> _</span><span style="color: #F47067">|</span><span style="color: #ADBAC7"> </span><span style="color: #F47067">|</span><span style="color: #ADBAC7">_</span></span>
+<span class="line"></span>
+<span class="line"><span style="color: #ADBAC7">Term</span><span style="color: #F47067">-</span><span style="color: #ADBAC7">gotchi</span></span>
+<span class="line"><span style="color: #ADBAC7">Form: builder</span></span>
+<span class="line"><span style="color: #ADBAC7">Level: </span><span style="color: #6CB6FF">28</span></span>
+<span class="line"><span style="color: #ADBAC7">XP: &#91;#####.....&#93; </span><span style="color: #6CB6FF">144</span><span style="color: #F47067">/</span><span style="color: #6CB6FF">290</span></span>
+<span class="line"><span style="color: #ADBAC7">Hunger: &#91;##########&#93; </span><span style="color: #6CB6FF">100</span></span>
+<span class="line"><span style="color: #ADBAC7">Health: &#91;##########&#93; </span><span style="color: #6CB6FF">100</span></span>
+<span class="line"><span style="color: #ADBAC7">Mood: &#91;##########&#93; </span><span style="color: #6CB6FF">100</span></span>
+<span class="line"><span style="color: #ADBAC7">Commands: </span><span style="color: #6CB6FF">2969</span><span style="color: #ADBAC7"> total </span><span style="color: #F47067">/</span><span style="color: #ADBAC7"> </span><span style="color: #6CB6FF">108</span><span style="color: #ADBAC7"> unique</span></span>
+<span class="line"><span style="color: #ADBAC7">Vocab: </span><span style="color: #6CB6FF">10</span></span>
+<span class="line"><span style="color: #ADBAC7">Trait: tough hands</span><span style="color: #F47067">-</span><span style="color: #ADBAC7">on finisher</span></span>
+<span class="line"><span style="color: #ADBAC7">Final form reached</span></span>
+<span class="line"><span style="color: #ADBAC7">Message: Sounds good. What </span><span style="color: #F47067">do</span><span style="color: #ADBAC7"> you want to tackle next</span><span style="color: #F47067">?</span></span></code></pre></div>
+<!-- /wp:kevinbatdorf/code-block-pro -->
+
+<!-- wp:paragraph -->
+<p>追加したのは、次の要素です。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"className":"wp-block-list -list-under-dashed"} -->
+<ul class="wp-block-list -list-under-dashed"><!-- wp:list-item -->
+<li>XP のゲージ表示</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>hunger / health / mood のゲージ表示</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>Commands: total / unique</code></li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>次の進化条件を示すヒント</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>form ごとの <code>Trait:</code> 行</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>これで、単に「数値が増えている」ではなく、</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"className":"wp-block-list -list-under-dashed"} -->
+<ul class="wp-block-list -list-under-dashed"><!-- wp:list-item -->
+<li>あとどれくらいで次に進むのか</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>どんな育ち方をしているのか</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>今の形態は何が得意なのか</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>が、一目で分かるようになりました。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>こういう改善は地味ですが、毎回触るコマンドほど、効いてきます。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">進化後の差を、見た目以外にも持たせた</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p><span class="swl-bg-color has-swl-pale-04-background-color">次にやったのが、形態ごとの個性付けです。</span></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>最初の頃は、進化しても、主な違いは ASCII アートだけでした。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>もちろん、それだけでも楽しいのですが、続けて使っていると「育て方の違い」が欲しくなります。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>そこで、まず <code>tg_talk</code> と <code>tg_train</code> を、form ごとに変えました。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading"><code>tg_talk</code> の変化</h3>
+<!-- /wp:heading -->
+
+<!-- wp:list {"className":"wp-block-list -list-under-dashed"} -->
+<ul class="wp-block-list -list-under-dashed"><!-- wp:list-item -->
+<li><code>egg</code>: まだ素直で小さな相棒</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>sprout</code>: 成長意欲が強い</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>buddy</code>: 一緒に作業する相棒らしさが出る</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>sage</code>: 学習や理解に寄った台詞になる</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>builder</code>: 実務や作業推進に寄った台詞になる</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading"><code>tg_train</code> の変化</h3>
+<!-- /wp:heading -->
+
+<!-- wp:list {"className":"wp-block-list -list-under-dashed"} -->
+<ul class="wp-block-list -list-under-dashed"><!-- wp:list-item -->
+<li><code>egg</code>: <code>XP +3, Vocab +1</code></li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>sprout</code>: <code>XP +4, Vocab +1</code></li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>buddy</code>: <code>XP +5, Vocab +2</code></li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>sage</code>: <code>XP +6, Vocab +3</code></li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>builder</code>: <code>XP +6, Vocab +2</code></li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>これで、育つほど行動の意味が、少しずつ変わるようになりました。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p><span class="swl-bg-color has-swl-pale-04-background-color">単純な数値上昇でも、文脈が乗ると急に楽しくなります。</span></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading"><code>buddy</code> の先に分岐進化を作った</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p><span class="swl-bg-color has-swl-pale-04-background-color">ここが第2回の中心です。</span></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p><code>buddy</code> の先に、</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"className":"wp-block-list -list-under-dashed"} -->
+<ul class="wp-block-list -list-under-dashed"><!-- wp:list-item -->
+<li><code>sage</code></li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>builder</code></li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>という 2 つの最終形を追加しました。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading"><code>sage</code></h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>学習寄りの進化です。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"className":"wp-block-list -list-under-dashed"} -->
+<ul class="wp-block-list -list-under-dashed"><!-- wp:list-item -->
+<li><code>vocab_level</code> を伸ばす</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>tg_train</code> を多めに使う</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>言葉や理解に寄った育ち方をする</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading"><code>builder</code></h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>実務寄りの進化です。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"className":"wp-block-list -list-under-dashed"} -->
+<ul class="wp-block-list -list-under-dashed"><!-- wp:list-item -->
+<li><code>command_count</code> を積む</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>普段の作業をたくさんこなす</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>手を動かして前に進むタイプになる</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>条件は、シンプルにしています。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"className":"wp-block-list -list-under-dashed"} -->
+<ul class="wp-block-list -list-under-dashed"><!-- wp:list-item -->
+<li><code>buddy -&gt; sage</code>: <code>level &gt;= 5</code> かつ <code>vocab_level &gt;= 8</code></li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>buddy -&gt; builder</code>: <code>level &gt;= 5</code> かつ <code>command_count &gt;= 30</code></li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>もし両方の条件に近い場合でも、どの操作で進んだかによって、分岐先が決まるようにしました。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"className":"wp-block-list -list-under-dashed"} -->
+<ul class="wp-block-list -list-under-dashed"><!-- wp:list-item -->
+<li>訓練で進んだら <code>sage</code></li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>通常コマンドの積み上げで進んだら <code>builder</code></li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>これはゲーム的な演出でもありますが、同時に「<span class="swl-bg-color has-swl-pale-04-background-color">使い方がそのまま個性になる</span>」設計でもあります。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">最終形には専用コマンドも足した</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>分岐進化を入れるなら、見た目と台詞だけでは足りません。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>そこで、<span class="swl-bg-color has-swl-pale-04-background-color">最終形には専用コマンドを用意しました。</span></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading"><code>tg_study</code></h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p><code>sage</code> 専用です。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"className":"wp-block-list -list-under-dashed"} -->
+<ul class="wp-block-list -list-under-dashed"><!-- wp:list-item -->
+<li><code>XP +4</code></li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>Vocab +4</code></li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>学習特化らしく、語彙成長が大きく伸びます。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading"><code>tg_build</code></h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p><code>builder</code> 専用です。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"className":"wp-block-list -list-under-dashed"} -->
+<ul class="wp-block-list -list-under-dashed"><!-- wp:list-item -->
+<li><code>XP +8</code></li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>Vocab +1</code></li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>作業寄りの勢いを、そのまま強い進行力に変えています。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>しかも、別の form で呼ぶと、はっきりエラーにしています。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:kevinbatdorf/code-block-pro {"code":"termgotchi: tg_study is available only in sage form. Current form: egg","codeHTML":"\u003cpre class=\u0022shiki github-dark-dimmed\u0022 style=\u0022background-color: #22272e\u0022 tabindex=\u00220\u0022\u003e\u003ccode\u003e\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003etermgotchi: tg_study is available only in sage form. Current form: egg\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/pre\u003e","language":"tex","theme":"github-dark-dimmed","bgColor":"#22272e","textColor":"#adbac7","fontSize":".875rem","fontFamily":"Code-Pro-JetBrains-Mono","lineHeight":"1.25rem","clampFonts":false,"lineNumbers":false,"headerType":"headlights","disablePadding":false,"footerType":"none","enableMaxHeight":false,"seeMoreType":"","seeMoreString":"","seeMoreAfterLine":"","seeMoreTransition":false,"seeMoreCollapse":false,"seeMoreCollapseString":"","highlightingHover":false,"lineHighlightColor":"rgba(139, 186, 234, 0.2)","copyButton":true,"copyButtonType":"heroicons","copyButtonUseTextarea":true,"useTabs":false} -->
+<div class="wp-block-kevinbatdorf-code-block-pro" data-code-block-pro-font-family="Code-Pro-JetBrains-Mono" style="font-size:.875rem;font-family:Code-Pro-JetBrains-Mono,ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;line-height:1.25rem;--cbp-tab-width:2;tab-size:var(--cbp-tab-width, 2)"><span style="display:block;padding:16px 0 0 16px;margin-bottom:-1px;width:100%;text-align:left;background-color:#22272e"><svg xmlns="http://www.w3.org/2000/svg" width="54" height="14" viewBox="0 0 54 14"><g fill="none" fill-rule="evenodd" transform="translate(1 1)"><circle cx="6" cy="6" r="6" fill="#FF5F56" stroke="#E0443E" stroke-width=".5"></circle><circle cx="26" cy="6" r="6" fill="#FFBD2E" stroke="#DEA123" stroke-width=".5"></circle><circle cx="46" cy="6" r="6" fill="#27C93F" stroke="#1AAB29" stroke-width=".5"></circle></g></svg></span><span role="button" tabindex="0" style="color:#adbac7;display:none" aria-label="Copy" class="code-block-pro-copy-button"><pre class="code-block-pro-copy-button-pre" aria-hidden="true"><textarea class="code-block-pro-copy-button-textarea" tabindex="-1" aria-hidden="true" readonly>termgotchi: tg_study is available only in sage form. Current form: egg</textarea></pre><svg xmlns="http://www.w3.org/2000/svg" style="width:24px;height:24px" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path class="with-check" stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path><path class="without-check" stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg></span><pre class="shiki github-dark-dimmed" style="background-color: #22272e" tabindex="0"><code><span class="line"><span style="color: #ADBAC7">termgotchi: tg_study is available only in sage form. Current form: egg</span></span></code></pre></div>
+<!-- /wp:kevinbatdorf/code-block-pro -->
+
+<!-- wp:paragraph -->
+<p>ここを曖昧にしなかったのは、重要でした。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p><span class="swl-bg-color has-swl-pale-04-background-color">「何でも実行できる」より、「今の形態だからこそ使える」のほうが、育成として気持ちよくなります。</span></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">成長記録として <code>tg_history</code> を足した</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p><span class="swl-bg-color has-swl-pale-04-background-color">今回いちばん実用的だった追加が、これです。</span></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p><code>tg_history</code> は、直近 12 件の成長イベントを表示します。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>対象になるのは、</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"className":"wp-block-list -list-under-dashed"} -->
+<ul class="wp-block-list -list-under-dashed"><!-- wp:list-item -->
+<li>通常コマンドによる成長</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>tg_feed</code></li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>tg_clean</code></li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>tg_train</code></li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>tg_study</code></li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>tg_build</code></li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>idle 時のメッセージ</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>進化イベント</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>です。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>例えば、こんな形で見えます。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:kevinbatdorf/code-block-pro {"code":"Recent growth log:\n  2026-05-15T23:15:19+0900  tg_train: I can feel new skills taking root.\n  2026-05-15T23:15:19+0900  last_fed_at: Yum! Thanks for the snack.","codeHTML":"\u003cpre class=\u0022shiki github-dark-dimmed\u0022 style=\u0022background-color: #22272e\u0022 tabindex=\u00220\u0022\u003e\u003ccode\u003e\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003eRecent growth log:\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003e  2026-05-15T23:15:19+0900  tg_train: I can feel new skills taking root.\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003e  2026-05-15T23:15:19+0900  last_fed_at: Yum! Thanks for the snack.\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/pre\u003e","language":"tex","theme":"github-dark-dimmed","bgColor":"#22272e","textColor":"#adbac7","fontSize":".875rem","fontFamily":"Code-Pro-JetBrains-Mono","lineHeight":"1.25rem","clampFonts":false,"lineNumbers":false,"headerType":"headlights","disablePadding":false,"footerType":"none","enableMaxHeight":false,"seeMoreType":"","seeMoreString":"","seeMoreAfterLine":"","seeMoreTransition":false,"seeMoreCollapse":false,"seeMoreCollapseString":"","highlightingHover":false,"lineHighlightColor":"rgba(139, 186, 234, 0.2)","copyButton":true,"copyButtonType":"heroicons","copyButtonUseTextarea":true,"useTabs":false} -->
+<div class="wp-block-kevinbatdorf-code-block-pro" data-code-block-pro-font-family="Code-Pro-JetBrains-Mono" style="font-size:.875rem;font-family:Code-Pro-JetBrains-Mono,ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;line-height:1.25rem;--cbp-tab-width:2;tab-size:var(--cbp-tab-width, 2)"><span style="display:block;padding:16px 0 0 16px;margin-bottom:-1px;width:100%;text-align:left;background-color:#22272e"><svg xmlns="http://www.w3.org/2000/svg" width="54" height="14" viewBox="0 0 54 14"><g fill="none" fill-rule="evenodd" transform="translate(1 1)"><circle cx="6" cy="6" r="6" fill="#FF5F56" stroke="#E0443E" stroke-width=".5"></circle><circle cx="26" cy="6" r="6" fill="#FFBD2E" stroke="#DEA123" stroke-width=".5"></circle><circle cx="46" cy="6" r="6" fill="#27C93F" stroke="#1AAB29" stroke-width=".5"></circle></g></svg></span><span role="button" tabindex="0" style="color:#adbac7;display:none" aria-label="Copy" class="code-block-pro-copy-button"><pre class="code-block-pro-copy-button-pre" aria-hidden="true"><textarea class="code-block-pro-copy-button-textarea" tabindex="-1" aria-hidden="true" readonly>Recent growth log:
+  2026-05-15T23:15:19+0900  tg_train: I can feel new skills taking root.
+  2026-05-15T23:15:19+0900  last_fed_at: Yum! Thanks for the snack.</textarea></pre><svg xmlns="http://www.w3.org/2000/svg" style="width:24px;height:24px" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path class="with-check" stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path><path class="without-check" stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg></span><pre class="shiki github-dark-dimmed" style="background-color: #22272e" tabindex="0"><code><span class="line"><span style="color: #ADBAC7">Recent growth log:</span></span>
+<span class="line"><span style="color: #ADBAC7">  2026-05-15T23:15:19+0900  tg_train: I can feel new skills taking root.</span></span>
+<span class="line"><span style="color: #ADBAC7">  2026-05-15T23:15:19+0900  last_fed_at: Yum! Thanks for the snack.</span></span></code></pre></div>
+<!-- /wp:kevinbatdorf/code-block-pro -->
+
+<!-- wp:paragraph -->
+<p>これで「何が起きて、今の姿になったのか」が、ようやくストーリーとして見えるようになりました。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p><span class="swl-bg-color has-swl-pale-04-background-color">育成アプリにログを付けると、ただの state 管理が、一気に“記録”になります。</span></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">実装して初めて見つかった不具合もあった</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p><span class="swl-bg-color has-swl-pale-04-background-color">今回の追加で、むしろ良かったのは、バグが見つかったことです。</span></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>代表例は、2 つありました。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading">1. <code>source ~/.zshrc</code> しても新しいコマンドが増えない</h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p><span class="swl-bg-color has-swl-pale-04-background-color">原因は、<code>termgotchi.zsh</code> の先頭にあったロード済みガードです。</span></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:kevinbatdorf/code-block-pro {"code":"if [[ -n \u0022${TERM_GOTCHI_LOADED:-}\u0022 ]]; then\n  return 0\nfi","codeHTML":"\u003cpre class=\u0022shiki github-dark-dimmed\u0022 style=\u0022background-color: #22272e\u0022 tabindex=\u00220\u0022\u003e\u003ccode\u003e\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #F47067\u0022\u003eif\u003c/span\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003e [\u0026#91; \u003c/span\u003e\u003cspan style=\u0022color: #F47067\u0022\u003e-n\u003c/span\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #96D0FF\u0022\u003e\u0026quot;${\u003c/span\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003eTERM_GOTCHI_LOADED\u003c/span\u003e\u003cspan style=\u0022color: #F47067\u0022\u003e:-\u003c/span\u003e\u003cspan style=\u0022color: #96D0FF\u0022\u003e}\u0026quot;\u003c/span\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003e \u0026#93;]; \u003c/span\u003e\u003cspan style=\u0022color: #F47067\u0022\u003ethen\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003e  \u003c/span\u003e\u003cspan style=\u0022color: #F47067\u0022\u003ereturn\u003c/span\u003e\u003cspan style=\u0022color: #ADBAC7\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #6CB6FF\u0022\u003e0\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #F47067\u0022\u003efi\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/pre\u003e","language":"bash","theme":"github-dark-dimmed","bgColor":"#22272e","textColor":"#adbac7","fontSize":".875rem","fontFamily":"Code-Pro-JetBrains-Mono","lineHeight":"1.25rem","clampFonts":false,"lineNumbers":false,"headerType":"headlights","disablePadding":false,"footerType":"none","enableMaxHeight":false,"seeMoreType":"","seeMoreString":"","seeMoreAfterLine":"","seeMoreTransition":false,"seeMoreCollapse":false,"seeMoreCollapseString":"","highlightingHover":false,"lineHighlightColor":"rgba(139, 186, 234, 0.2)","copyButton":true,"copyButtonType":"heroicons","copyButtonUseTextarea":true,"useTabs":false} -->
+<div class="wp-block-kevinbatdorf-code-block-pro" data-code-block-pro-font-family="Code-Pro-JetBrains-Mono" style="font-size:.875rem;font-family:Code-Pro-JetBrains-Mono,ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;line-height:1.25rem;--cbp-tab-width:2;tab-size:var(--cbp-tab-width, 2)"><span style="display:block;padding:16px 0 0 16px;margin-bottom:-1px;width:100%;text-align:left;background-color:#22272e"><svg xmlns="http://www.w3.org/2000/svg" width="54" height="14" viewBox="0 0 54 14"><g fill="none" fill-rule="evenodd" transform="translate(1 1)"><circle cx="6" cy="6" r="6" fill="#FF5F56" stroke="#E0443E" stroke-width=".5"></circle><circle cx="26" cy="6" r="6" fill="#FFBD2E" stroke="#DEA123" stroke-width=".5"></circle><circle cx="46" cy="6" r="6" fill="#27C93F" stroke="#1AAB29" stroke-width=".5"></circle></g></svg></span><span role="button" tabindex="0" style="color:#adbac7;display:none" aria-label="Copy" class="code-block-pro-copy-button"><pre class="code-block-pro-copy-button-pre" aria-hidden="true"><textarea class="code-block-pro-copy-button-textarea" tabindex="-1" aria-hidden="true" readonly>if [&#91; -n "${TERM_GOTCHI_LOADED:-}" &#93;]; then
+  return 0
+fi</textarea></pre><svg xmlns="http://www.w3.org/2000/svg" style="width:24px;height:24px" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path class="with-check" stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path><path class="without-check" stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg></span><pre class="shiki github-dark-dimmed" style="background-color: #22272e" tabindex="0"><code><span class="line"><span style="color: #F47067">if</span><span style="color: #ADBAC7"> [&#91; </span><span style="color: #F47067">-n</span><span style="color: #ADBAC7"> </span><span style="color: #96D0FF">&quot;${</span><span style="color: #ADBAC7">TERM_GOTCHI_LOADED</span><span style="color: #F47067">:-</span><span style="color: #96D0FF">}&quot;</span><span style="color: #ADBAC7"> &#93;]; </span><span style="color: #F47067">then</span></span>
+<span class="line"><span style="color: #ADBAC7">  </span><span style="color: #F47067">return</span><span style="color: #ADBAC7"> </span><span style="color: #6CB6FF">0</span></span>
+<span class="line"><span style="color: #F47067">fi</span></span></code></pre></div>
+<!-- /wp:kevinbatdorf/code-block-pro -->
+
+<!-- wp:paragraph -->
+<p>これがあると、いったん読み込んだあとに <code>source ~/.zshrc</code> しても、新しい関数定義が再読込されません。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>つまり、<code>tg_history</code> を追加しても、今のシェルでは「command not found」のままです。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>ここは修正して、<code>source ~/.zshrc</code> で新しい定義が上書きされるようにしました。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading">2. <code>whence</code> が成長ログに入ってしまう</h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p><code>tg_history</code> を試すために <code>whence -w tg_history</code> を打ったら、それ自体が成長ログに入ってしまいました。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>これは、内部コマンドの除外リストに <code>whence</code>、<code>type</code>、<code>which</code> が入っていなかったためです。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p><span class="swl-bg-color has-swl-pale-04-background-color">こういうのは、実際に触って初めて見つかります。</span></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>小さい不具合ですが、シェル拡張では、かなり大事です。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">開発そのものも、<code>CHANGELOG.md</code> に残すようにした</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p><span class="swl-bg-color has-swl-pale-04-background-color">育成記録を付けるなら、開発記録も残したくなります。</span></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>そこで今回、リポジトリ側には <code>CHANGELOG.md</code> も追加しました。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>内容は、</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"className":"wp-block-list -list-under-dashed"} -->
+<ul class="wp-block-list -list-under-dashed"><!-- wp:list-item -->
+<li><code>v0.1.0</code>: safe install と基本表示</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>v0.2.0</code>: passive XP と care commands</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>v0.4.0</code>: ゲージ表示と成長バランス調整</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>v0.6.0</code>: <code>sage</code> / <code>builder</code> 分岐進化</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>v0.8.0</code>: <code>tg_history</code> と reload 修正</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>のように、段階ごとの進化が追える形です。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>個人開発では、完成品だけを見ると「最初からこうだった」ように見えます。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>でも実際は、</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"className":"wp-block-list -list-under-dashed"} -->
+<ul class="wp-block-list -list-under-dashed"><!-- wp:list-item -->
+<li>小さく作る</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>使ってみる</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>違和感を見つける</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>それを記録しながら直す</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>の積み重ねです。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p><span class="swl-bg-color has-swl-pale-04-background-color">この流れを残しておくと、あとで自分でも助かります。</span></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">今回の追加で見えたこと</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>第1回では、「安全に動くミニ育成アプリを作る」ことが主題でした。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>第2回で見えてきたのは、<strong><span class="swl-bg-color has-swl-pale-04-background-color">育成アプリは機能追加よりも、変化の見え方が大切</span></strong>だということです。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>数値を増やすだけなら、簡単です。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>でも、</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"className":"wp-block-list -list-under-dashed"} -->
+<ul class="wp-block-list -list-under-dashed"><!-- wp:list-item -->
+<li>何が起きたかを残す</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>育て方で進化先が変わる</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>形態ごとに言葉と役割が変わる</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>開発の過程そのものも記録する</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>といった層が足されると、アプリ全体に時間の流れが生まれます。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>これは、小さな CLI ツールでも同じです。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p><span class="swl-bg-color has-swl-pale-04-background-color">ターミナルの中の遊びでも、履歴があると世界が少し深くなります。</span></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">おわりに</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p><span class="swl-bg-color has-swl-pale-04-background-color">Term-gotchi は、最初から大きなものを目指して作ったアプリではありません</span>。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>むしろ、</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"className":"wp-block-list -list-under-dashed"} -->
+<ul class="wp-block-list -list-under-dashed"><!-- wp:list-item -->
+<li>壊さない</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>小さく始める</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>使いながら伸ばす</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>記録を残す</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>という、かなり UNIX 的な育て方をしてきました。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>今回、第2回として成長記録や分岐進化を足したことで、ようやく「作って終わり」ではなく、「付き合っていけるアプリ」になってきた気がします。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>もし自分でターミナルツールを作るなら、最初から豪華にしなくて大丈夫です。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>まずは小さく作って、次に記録を足してください。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p><span class="swl-bg-color has-swl-pale-04-background-color">変化が見えるようになるだけで、道具はかなり面白くなります。</span></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading">Term-gotchi のソースコード公開</h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>Term-gotchi のソースコードは GitHub で公開しています。インストール用スクリプトや配布パッケージ作成用のスクリプトも含めて置いているので、zsh 製の小さなターミナルアプリを作るときの参考にもなると思います。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:loos/button {"hrefUrl":"https://github.com/k1117n-cmyk/termgotchi","isNewTab":true,"color":"blue","className":"is-style-btn_normal"} -->
+<div class="swell-block-button blue_ is-style-btn_normal"><a href="https://github.com/k1117n-cmyk/termgotchi" target="_blank" rel="noopener noreferrer" class="swell-block-button__link"><span>Term-gotchi を GitHub で見る</span></a></div>
+<!-- /wp:loos/button -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">次回は、相棒に英語を教わります</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p><span class="swl-bg-color has-swl-pale-04-background-color">成長記録と分岐進化で、Term-gotchi は「付き合っていけるアプリ」になってきました。</span></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>次回は、状態に応じて短い英語を返す <code>tg_talk</code> を、軽い英語教材として育てます。時間帯やコマンド文脈に応じた台詞、英英辞典風の説明、2ターンの会話例まで足して、shell の日常にそっと英語学習を溶かし込んでいきます。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>👉 第3回「育てた相棒に、英語を教わる。<span class="swl-bg-color has-swl-pale-04-background-color">Term-gotchi の tg_talk を会話練習モードに育てた開発記」へ進む</span></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:loos/post-list {"postID":"44572"} /-->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">最初の実装から読みたい方へ</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p><span class="swl-bg-color has-swl-pale-04-background-color">今回は、Term-gotchi に成長記録と分岐進化を追加しました。</span></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>その前の第1回では、zsh の中で育つ小さな相棒アプリとして、Term-gotchi を最初に動かすところまでを紹介しています。安全なシェル設計、<code>.zshrc</code> への追加方法、状態ファイルの扱いなど、今回の機能追加の土台になる部分です。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>👉 第1回「ターミナルで育つ相棒を作ろう。<span class="swl-bg-color has-swl-pale-04-background-color">zsh製ミニ育成アプリ『Term-gotchi』開発記」へ戻る</span></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:loos/post-list {"postID":"44414"} /-->
+
+<!-- wp:html -->
+[blog_parts id="32595"]
+<!-- /wp:html -->
