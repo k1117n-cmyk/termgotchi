@@ -1,0 +1,764 @@
+第4回 | 育てた相棒を Git で配る。Term-gotchi を壊さず更新できる形に整えた開発記 | UNIX Cafe
+<!-- wp:image {"id":48215,"sizeSlug":"large","linkDestination":"none"} -->
+<figure class="wp-block-image size-large"><img src="https://pc-fan.net/wp/wp-content/uploads/2026/07/04-800x446.webp" alt="第4回 | 育てた相棒を Git で配る。Term-gotchi を壊さず更新できる形に整えた開発記 | UNIX Cafe" class="wp-image-48215"/></figure>
+<!-- /wp:image -->
+
+<!-- wp:paragraph -->
+<p>Term-gotchi 第4回は、ここまで育ててきた小さなターミナルアプリを、<code>git</code> と GitHub で配布・管理できる形に整える編です。コード、README、CHANGELOG、インストール用スクリプト、ユーザーごとの状態ファイルを分けながら、<span class="swl-bg-color has-swl-pale-04-background-color">「壊さず小さく育てる」やり方を Git の世界に持ち込んでいきます。</span></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>前回は、<strong>Term-gotchi</strong> の <code>tg_talk</code> を軽い英語教材として育てました。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p><code>Phrase</code>、<code>Theme</code>、<code>Tone</code>、<code>Meaning</code>、<code>Example</code> を返せるようになり、相棒がただ話すだけではなく、英語表現の小さな練習相手になってきました。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>ある程度アプリが形になってくると、次に気になるのは新しい機能を追加することよりも、この変更の積み重ねをどう残すかです。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>別のマシンでも、このアプリを使えるようにしたい。そして、あとで修正したり機能を追加した時に、安全に更新できる形にしたい。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>そこで今回は、Term-gotchi を手元のローカル環境にあるスクリプトから、<span class="swl-bg-color has-swl-pale-04-background-color">Git で配布・管理できる小さなプロジェクト</span>に育てていきます。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">手元スクリプトのままだと、育てるほど不安になる</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>Term-gotchi は最初、かなり小さな zsh スクリプトとして始まりました。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>状態を持ち、起動するたびに少し変化し、空腹や mood を見ながら反応する。最初はそれだけでも十分楽しかったのですが、第2回、第3回と進むうちに、だんだん手元のファイルだけでは管理しづらくなってきました。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"className":"wp-block-list -list-under-dashed"} -->
+<ul class="wp-block-list -list-under-dashed"><!-- wp:list-item -->
+<li>どのファイルが最新なのか分かりにくい</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>変更前の状態に戻しづらい</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>別の Mac に入れる手順が毎回あいまいになる</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>README と実際のコマンドがずれやすい</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>配布したあと、更新方法を説明しにくい</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>小さいスクリプトでも、育て始めるとこういう問題はすぐに出てきます。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>特に Term-gotchi は、育成アプリです。ユーザーごとの状態ファイルもあれば、相棒の履歴もあります。コードと個人の育成データが混ざると、配布もしづらいし、更新もしづらくなります。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>そこで、スクリプトの管理にGit を使うことにしました。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>この記事は Git のコマンドを覚えることが目的ではなく、<strong>育てた相棒を、壊さず残し、配り、更新できる形にする</strong>ことをテーマにします。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">まずは、プロジェクトの形を整えた</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>GitHub に置く前に、最初にやったのはファイル構成の整理です。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>手元で動いているだけなら、多少ファイルが散らばっていても何とかなりますが、<code>git clone</code> して使う人がいる前提で考えると、どこに何があるかが見える構成にしておきたいからです。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>Term-gotchi では、だいたい次のような形を意識しました。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:kevinbatdorf/code-block-pro {"code":"termgotchi/\n  bin/\n    tg\n    tg_talk\n    tg_history\n  install.sh\n  uninstall.sh\n  README.md\n  CHANGELOG.md\n  LICENSE","codeHTML":"\u003cpre class=\u0022shiki poimandres\u0022 style=\u0022background-color: #1b1e28\u0022 tabindex=\u00220\u0022\u003e\u003ccode\u003e\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003etermgotchi/\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e  bin/\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e    tg\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e    tg_talk\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e    tg_history\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e  install.sh\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e  uninstall.sh\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e  README.md\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e  CHANGELOG.md\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e  LICENSE\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/pre\u003e","language":"tex","theme":"poimandres","bgColor":"#1b1e28","textColor":"#a6accd","fontSize":".875rem","fontFamily":"Code-Pro-JetBrains-Mono","lineHeight":"1.25rem","clampFonts":false,"lineNumbers":false,"headerType":"headlights","disablePadding":false,"footerType":"none","enableMaxHeight":false,"seeMoreType":"","seeMoreString":"","seeMoreAfterLine":"","seeMoreTransition":false,"seeMoreCollapse":false,"seeMoreCollapseString":"","highlightingHover":false,"lineHighlightColor":"rgba(131, 148, 240, 0.2)","copyButton":true,"copyButtonType":"heroicons","copyButtonUseTextarea":true,"useTabs":false} -->
+<div class="wp-block-kevinbatdorf-code-block-pro" data-code-block-pro-font-family="Code-Pro-JetBrains-Mono" style="font-size:.875rem;font-family:Code-Pro-JetBrains-Mono,ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;line-height:1.25rem;--cbp-tab-width:2;tab-size:var(--cbp-tab-width, 2)"><span style="display:block;padding:16px 0 0 16px;margin-bottom:-1px;width:100%;text-align:left;background-color:#1b1e28"><svg xmlns="http://www.w3.org/2000/svg" width="54" height="14" viewBox="0 0 54 14"><g fill="none" fill-rule="evenodd" transform="translate(1 1)"><circle cx="6" cy="6" r="6" fill="#FF5F56" stroke="#E0443E" stroke-width=".5"></circle><circle cx="26" cy="6" r="6" fill="#FFBD2E" stroke="#DEA123" stroke-width=".5"></circle><circle cx="46" cy="6" r="6" fill="#27C93F" stroke="#1AAB29" stroke-width=".5"></circle></g></svg></span><span role="button" tabindex="0" style="color:#a6accd;display:none" aria-label="Copy" class="code-block-pro-copy-button"><pre class="code-block-pro-copy-button-pre" aria-hidden="true"><textarea class="code-block-pro-copy-button-textarea" tabindex="-1" aria-hidden="true" readonly>termgotchi/
+  bin/
+    tg
+    tg_talk
+    tg_history
+  install.sh
+  uninstall.sh
+  README.md
+  CHANGELOG.md
+  LICENSE</textarea></pre><svg xmlns="http://www.w3.org/2000/svg" style="width:24px;height:24px" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path class="with-check" stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path><path class="without-check" stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg></span><pre class="shiki poimandres" style="background-color: #1b1e28" tabindex="0"><code><span class="line"><span style="color: #A6ACCD">termgotchi/</span></span>
+<span class="line"><span style="color: #A6ACCD">  bin/</span></span>
+<span class="line"><span style="color: #A6ACCD">    tg</span></span>
+<span class="line"><span style="color: #A6ACCD">    tg_talk</span></span>
+<span class="line"><span style="color: #A6ACCD">    tg_history</span></span>
+<span class="line"><span style="color: #A6ACCD">  install.sh</span></span>
+<span class="line"><span style="color: #A6ACCD">  uninstall.sh</span></span>
+<span class="line"><span style="color: #A6ACCD">  README.md</span></span>
+<span class="line"><span style="color: #A6ACCD">  CHANGELOG.md</span></span>
+<span class="line"><span style="color: #A6ACCD">  LICENSE</span></span></code></pre></div>
+<!-- /wp:kevinbatdorf/code-block-pro -->
+
+<!-- wp:paragraph -->
+<p>ポイントは、コード、説明、履歴、インストール処理を分けることです。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"className":"wp-block-list -list-under-dashed"} -->
+<ul class="wp-block-list -list-under-dashed"><!-- wp:list-item -->
+<li>実行するコマンドは <code>bin/</code> に集める</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>インストール処理は <code>install.sh</code> に寄せる</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>削除の手順は <code>uninstall.sh</code> にまとめる</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>使い方は <code>README.md</code> に書く</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>変更の流れは <code>CHANGELOG.md</code> に残す</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>ここを整理すると、あとから自分が直すときにも、どこを見ればいいかがすぐに分かります。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>また、誰かに試してもらうときにも、最初に読むべき場所が分かります。小さなアプリでも、ここを整えるだけでかなり扱いやすくなります。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">Git で管理するものと、管理しないものを分ける</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>Term-gotchi を Git で管理するときに、一番気をつけたかったのはここです。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p><span class="swl-bg-color has-swl-pale-04-background-color">Git に入れるべきものと、入れてはいけないものを分ける。</span></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>普通のツールなら、ソースコード、README、設定例を入れればだいたい済みます。でも Term-gotchi は育成アプリなので、ユーザーごとの状態があります。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"className":"wp-block-list -list-under-dashed"} -->
+<ul class="wp-block-list -list-under-dashed"><!-- wp:list-item -->
+<li>今の hunger</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>今の mood</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>どの form まで成長したか</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>どんな履歴が残っているか</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>どのマシンで、どれくらい使われているか</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>こういうものは、配布するコードではなく、その人の環境に残るデータです。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>なので Git で管理するのは、あくまでアプリ本体、説明、インストール手順、変更履歴にします。育成状態やログ、一時ファイルはリポジトリに入れません。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>その境界を明確にするために、<code>.gitignore</code> も用意します。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:kevinbatdorf/code-block-pro {"code":"*.log\n.DS_Store\ntermgotchi_state\ntermgotchi_history\ntmp/","codeHTML":"\u003cpre class=\u0022shiki poimandres\u0022 style=\u0022background-color: #1b1e28\u0022 tabindex=\u00220\u0022\u003e\u003ccode\u003e\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e*.log\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e.DS_Store\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003etermgotchi_state\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003etermgotchi_history\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003etmp/\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/pre\u003e","language":"tex","theme":"poimandres","bgColor":"#1b1e28","textColor":"#a6accd","fontSize":".875rem","fontFamily":"Code-Pro-JetBrains-Mono","lineHeight":"1.25rem","clampFonts":false,"lineNumbers":false,"headerType":"headlights","disablePadding":false,"footerType":"none","enableMaxHeight":false,"seeMoreType":"","seeMoreString":"","seeMoreAfterLine":"","seeMoreTransition":false,"seeMoreCollapse":false,"seeMoreCollapseString":"","highlightingHover":false,"lineHighlightColor":"rgba(131, 148, 240, 0.2)","copyButton":true,"copyButtonType":"heroicons","copyButtonUseTextarea":true,"useTabs":false} -->
+<div class="wp-block-kevinbatdorf-code-block-pro" data-code-block-pro-font-family="Code-Pro-JetBrains-Mono" style="font-size:.875rem;font-family:Code-Pro-JetBrains-Mono,ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;line-height:1.25rem;--cbp-tab-width:2;tab-size:var(--cbp-tab-width, 2)"><span style="display:block;padding:16px 0 0 16px;margin-bottom:-1px;width:100%;text-align:left;background-color:#1b1e28"><svg xmlns="http://www.w3.org/2000/svg" width="54" height="14" viewBox="0 0 54 14"><g fill="none" fill-rule="evenodd" transform="translate(1 1)"><circle cx="6" cy="6" r="6" fill="#FF5F56" stroke="#E0443E" stroke-width=".5"></circle><circle cx="26" cy="6" r="6" fill="#FFBD2E" stroke="#DEA123" stroke-width=".5"></circle><circle cx="46" cy="6" r="6" fill="#27C93F" stroke="#1AAB29" stroke-width=".5"></circle></g></svg></span><span role="button" tabindex="0" style="color:#a6accd;display:none" aria-label="Copy" class="code-block-pro-copy-button"><pre class="code-block-pro-copy-button-pre" aria-hidden="true"><textarea class="code-block-pro-copy-button-textarea" tabindex="-1" aria-hidden="true" readonly>*.log
+.DS_Store
+termgotchi_state
+termgotchi_history
+tmp/</textarea></pre><svg xmlns="http://www.w3.org/2000/svg" style="width:24px;height:24px" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path class="with-check" stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path><path class="without-check" stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg></span><pre class="shiki poimandres" style="background-color: #1b1e28" tabindex="0"><code><span class="line"><span style="color: #A6ACCD">*.log</span></span>
+<span class="line"><span style="color: #A6ACCD">.DS_Store</span></span>
+<span class="line"><span style="color: #A6ACCD">termgotchi_state</span></span>
+<span class="line"><span style="color: #A6ACCD">termgotchi_history</span></span>
+<span class="line"><span style="color: #A6ACCD">tmp/</span></span></code></pre></div>
+<!-- /wp:kevinbatdorf/code-block-pro -->
+
+<!-- wp:paragraph -->
+<p>Git で配る前提で考えると、<strong>共有すべきものと、個人の環境に残すものを分けること</strong>が大切になります。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>ここを分けておくと、あとから <code>git pull</code> で更新しても、育てた相棒の状態を壊しにくくなります。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">コミットは、プロジェクトの成長記録になる</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>第2回では、<code>tg_history</code> で相棒の成長を振り返れるようにしました。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>Git のコミットログも、それに少し似ています。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p><code>tg_history</code> が相棒の成長記録なら、<code>git log</code> はプロジェクトの成長記録です。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>そこで、コミットメッセージも単なる作業メモではなく、あとから見て「何を育てたのか」が分かる形にしたいと思います。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>例えば、こういうメッセージだと後から見た時に、修正の中身を追いづらくなります。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:kevinbatdorf/code-block-pro {"code":"update\nfix\n色々変更\n調整","codeHTML":"\u003cpre class=\u0022shiki poimandres\u0022 style=\u0022background-color: #1b1e28\u0022 tabindex=\u00220\u0022\u003e\u003ccode\u003e\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003eupdate\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003efix\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e色々変更\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e調整\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/pre\u003e","language":"tex","theme":"poimandres","bgColor":"#1b1e28","textColor":"#a6accd","fontSize":".875rem","fontFamily":"Code-Pro-JetBrains-Mono","lineHeight":"1.25rem","clampFonts":false,"lineNumbers":false,"headerType":"headlights","disablePadding":false,"footerType":"none","enableMaxHeight":false,"seeMoreType":"","seeMoreString":"","seeMoreAfterLine":"","seeMoreTransition":false,"seeMoreCollapse":false,"seeMoreCollapseString":"","highlightingHover":false,"lineHighlightColor":"rgba(131, 148, 240, 0.2)","copyButton":true,"copyButtonType":"heroicons","copyButtonUseTextarea":true,"useTabs":false} -->
+<div class="wp-block-kevinbatdorf-code-block-pro" data-code-block-pro-font-family="Code-Pro-JetBrains-Mono" style="font-size:.875rem;font-family:Code-Pro-JetBrains-Mono,ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;line-height:1.25rem;--cbp-tab-width:2;tab-size:var(--cbp-tab-width, 2)"><span style="display:block;padding:16px 0 0 16px;margin-bottom:-1px;width:100%;text-align:left;background-color:#1b1e28"><svg xmlns="http://www.w3.org/2000/svg" width="54" height="14" viewBox="0 0 54 14"><g fill="none" fill-rule="evenodd" transform="translate(1 1)"><circle cx="6" cy="6" r="6" fill="#FF5F56" stroke="#E0443E" stroke-width=".5"></circle><circle cx="26" cy="6" r="6" fill="#FFBD2E" stroke="#DEA123" stroke-width=".5"></circle><circle cx="46" cy="6" r="6" fill="#27C93F" stroke="#1AAB29" stroke-width=".5"></circle></g></svg></span><span role="button" tabindex="0" style="color:#a6accd;display:none" aria-label="Copy" class="code-block-pro-copy-button"><pre class="code-block-pro-copy-button-pre" aria-hidden="true"><textarea class="code-block-pro-copy-button-textarea" tabindex="-1" aria-hidden="true" readonly>update
+fix
+色々変更
+調整</textarea></pre><svg xmlns="http://www.w3.org/2000/svg" style="width:24px;height:24px" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path class="with-check" stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path><path class="without-check" stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg></span><pre class="shiki poimandres" style="background-color: #1b1e28" tabindex="0"><code><span class="line"><span style="color: #A6ACCD">update</span></span>
+<span class="line"><span style="color: #A6ACCD">fix</span></span>
+<span class="line"><span style="color: #A6ACCD">色々変更</span></span>
+<span class="line"><span style="color: #A6ACCD">調整</span></span></code></pre></div>
+<!-- /wp:kevinbatdorf/code-block-pro -->
+
+<!-- wp:paragraph -->
+<p>その時は覚えているのですが、数週間後に見返すと、具体的に何を変えたのかが分からなくなります。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>Term-gotchi では、こういう粒度のほうが向いています。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:kevinbatdorf/code-block-pro {"code":"Add tg_talk lesson metadata\nAdd evolution history command\nDocument install workflow\nIgnore local state files\nAdd uninstall script","codeHTML":"\u003cpre class=\u0022shiki poimandres\u0022 style=\u0022background-color: #1b1e28\u0022 tabindex=\u00220\u0022\u003e\u003ccode\u003e\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003eAdd tg_talk lesson metadata\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003eAdd evolution history command\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003eDocument install workflow\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003eIgnore local state files\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003eAdd uninstall script\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/pre\u003e","language":"tex","theme":"poimandres","bgColor":"#1b1e28","textColor":"#a6accd","fontSize":".875rem","fontFamily":"Code-Pro-JetBrains-Mono","lineHeight":"1.25rem","clampFonts":false,"lineNumbers":false,"headerType":"headlights","disablePadding":false,"footerType":"none","enableMaxHeight":false,"seeMoreType":"","seeMoreString":"","seeMoreAfterLine":"","seeMoreTransition":false,"seeMoreCollapse":false,"seeMoreCollapseString":"","highlightingHover":false,"lineHighlightColor":"rgba(131, 148, 240, 0.2)","copyButton":true,"copyButtonType":"heroicons","copyButtonUseTextarea":true,"useTabs":false} -->
+<div class="wp-block-kevinbatdorf-code-block-pro" data-code-block-pro-font-family="Code-Pro-JetBrains-Mono" style="font-size:.875rem;font-family:Code-Pro-JetBrains-Mono,ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;line-height:1.25rem;--cbp-tab-width:2;tab-size:var(--cbp-tab-width, 2)"><span style="display:block;padding:16px 0 0 16px;margin-bottom:-1px;width:100%;text-align:left;background-color:#1b1e28"><svg xmlns="http://www.w3.org/2000/svg" width="54" height="14" viewBox="0 0 54 14"><g fill="none" fill-rule="evenodd" transform="translate(1 1)"><circle cx="6" cy="6" r="6" fill="#FF5F56" stroke="#E0443E" stroke-width=".5"></circle><circle cx="26" cy="6" r="6" fill="#FFBD2E" stroke="#DEA123" stroke-width=".5"></circle><circle cx="46" cy="6" r="6" fill="#27C93F" stroke="#1AAB29" stroke-width=".5"></circle></g></svg></span><span role="button" tabindex="0" style="color:#a6accd;display:none" aria-label="Copy" class="code-block-pro-copy-button"><pre class="code-block-pro-copy-button-pre" aria-hidden="true"><textarea class="code-block-pro-copy-button-textarea" tabindex="-1" aria-hidden="true" readonly>Add tg_talk lesson metadata
+Add evolution history command
+Document install workflow
+Ignore local state files
+Add uninstall script</textarea></pre><svg xmlns="http://www.w3.org/2000/svg" style="width:24px;height:24px" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path class="with-check" stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path><path class="without-check" stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg></span><pre class="shiki poimandres" style="background-color: #1b1e28" tabindex="0"><code><span class="line"><span style="color: #A6ACCD">Add tg_talk lesson metadata</span></span>
+<span class="line"><span style="color: #A6ACCD">Add evolution history command</span></span>
+<span class="line"><span style="color: #A6ACCD">Document install workflow</span></span>
+<span class="line"><span style="color: #A6ACCD">Ignore local state files</span></span>
+<span class="line"><span style="color: #A6ACCD">Add uninstall script</span></span></code></pre></div>
+<!-- /wp:kevinbatdorf/code-block-pro -->
+
+<!-- wp:paragraph -->
+<p>大げさなルールは必要ありません。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>ただ、ひとつのコミットにひとつの意味を持たせる。あとから見たときに、その変更が何のためだったか分かるようにする。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>それだけでも、Git の履歴はかなり読みやすくなります。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">README は、最初の体験を作る場所だった</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>GitHub で配るなら、<code>README.md</code> はかなり重要です。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>README は単なる説明書ではなく、初めて見た人が、「これは何で、どう試せばいいのか」を判断する場所です。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>Term-gotchi の README では、最低限このあたりを書いておきたいと考えました。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"className":"wp-block-list -list-under-dashed"} -->
+<ul class="wp-block-list -list-under-dashed"><!-- wp:list-item -->
+<li>Term-gotchi が何をするアプリなのか</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>どんなコマンドがあるのか</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>どうインストールするのか</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>どうアンインストールするのか</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>状態ファイルはどこに保存されるのか</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>英語学習 flavor として何ができるのか</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>特に第3回で育てた <code>tg_talk</code> は、README でもちゃんと説明したいところです。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>単に「英語で話します」と書くだけだと内容が伝わらない。実際には、<code>Phrase</code>、<code>Theme</code>、<code>Tone</code>、<code>Meaning</code>、<code>Example</code> を返す micro lesson のような機能になっています。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>なので README には、実際の出力例も載せます。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:kevinbatdorf/code-block-pro {"code":"% tg_talk\nSounds good. What do you want to tackle next?\nPhrase: deliberate step / thoughtful move\nTheme: careful decision language\nTone: careful\nMeaning: Good for pushing back against random experimentation in favor of one intentional step.\nExample:\nA: Do you want to try a bunch of small changes?\nB: Not really. I think one thoughtful move is better.","codeHTML":"\u003cpre class=\u0022shiki poimandres\u0022 style=\u0022background-color: #1b1e28\u0022 tabindex=\u00220\u0022\u003e\u003ccode\u003e\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #91B4D5\u0022\u003e%\u003c/span\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #ADD7FF\u0022\u003etg_talk\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #91B4D5\u0022\u003eSounds\u003c/span\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #ADD7FF\u0022\u003egood.\u003c/span\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #ADD7FF\u0022\u003eWhat\u003c/span\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #ADD7FF\u0022\u003edo\u003c/span\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #ADD7FF\u0022\u003eyou\u003c/span\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #ADD7FF\u0022\u003ewant\u003c/span\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #ADD7FF\u0022\u003eto\u003c/span\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #ADD7FF\u0022\u003etackle\u003c/span\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #ADD7FF\u0022\u003enext?\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #91B4D5\u0022\u003ePhrase:\u003c/span\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #ADD7FF\u0022\u003edeliberate\u003c/span\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #ADD7FF\u0022\u003estep\u003c/span\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #ADD7FF\u0022\u003e/\u003c/span\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #ADD7FF\u0022\u003ethoughtful\u003c/span\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #ADD7FF\u0022\u003emove\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #91B4D5\u0022\u003eTheme:\u003c/span\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #ADD7FF\u0022\u003ecareful\u003c/span\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #ADD7FF\u0022\u003edecision\u003c/span\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #ADD7FF\u0022\u003elanguage\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #91B4D5\u0022\u003eTone:\u003c/span\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #ADD7FF\u0022\u003ecareful\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #91B4D5\u0022\u003eMeaning:\u003c/span\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #ADD7FF\u0022\u003eGood\u003c/span\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #ADD7FF\u0022\u003efor\u003c/span\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #ADD7FF\u0022\u003epushing\u003c/span\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #ADD7FF\u0022\u003eback\u003c/span\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #ADD7FF\u0022\u003eagainst\u003c/span\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #ADD7FF\u0022\u003erandom\u003c/span\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #ADD7FF\u0022\u003eexperimentation\u003c/span\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #ADD7FF\u0022\u003ein\u003c/span\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #ADD7FF\u0022\u003efavor\u003c/span\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #ADD7FF\u0022\u003eof\u003c/span\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #ADD7FF\u0022\u003eone\u003c/span\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #ADD7FF\u0022\u003eintentional\u003c/span\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #ADD7FF\u0022\u003estep.\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #91B4D5\u0022\u003eExample:\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #91B4D5\u0022\u003eA:\u003c/span\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #ADD7FF\u0022\u003eDo\u003c/span\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #ADD7FF\u0022\u003eyou\u003c/span\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #ADD7FF\u0022\u003ewant\u003c/span\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #ADD7FF\u0022\u003eto\u003c/span\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #ADD7FF\u0022\u003etry\u003c/span\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #ADD7FF\u0022\u003ea\u003c/span\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #ADD7FF\u0022\u003ebunch\u003c/span\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #ADD7FF\u0022\u003eof\u003c/span\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #ADD7FF\u0022\u003esmall\u003c/span\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #ADD7FF\u0022\u003echanges?\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #91B4D5\u0022\u003eB:\u003c/span\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #ADD7FF\u0022\u003eNot\u003c/span\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #ADD7FF\u0022\u003ereally.\u003c/span\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #ADD7FF\u0022\u003eI\u003c/span\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #ADD7FF\u0022\u003ethink\u003c/span\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #ADD7FF\u0022\u003eone\u003c/span\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #ADD7FF\u0022\u003ethoughtful\u003c/span\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #ADD7FF\u0022\u003emove\u003c/span\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #ADD7FF\u0022\u003eis\u003c/span\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #ADD7FF\u0022\u003ebetter.\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/pre\u003e","language":"bash","theme":"poimandres","bgColor":"#1b1e28","textColor":"#a6accd","fontSize":".875rem","fontFamily":"Code-Pro-JetBrains-Mono","lineHeight":"1.25rem","clampFonts":false,"lineNumbers":false,"headerType":"headlights","disablePadding":false,"footerType":"none","enableMaxHeight":false,"seeMoreType":"","seeMoreString":"","seeMoreAfterLine":"","seeMoreTransition":false,"seeMoreCollapse":false,"seeMoreCollapseString":"","highlightingHover":false,"lineHighlightColor":"rgba(131, 148, 240, 0.2)","copyButton":true,"copyButtonType":"heroicons","copyButtonUseTextarea":true,"useTabs":false} -->
+<div class="wp-block-kevinbatdorf-code-block-pro" data-code-block-pro-font-family="Code-Pro-JetBrains-Mono" style="font-size:.875rem;font-family:Code-Pro-JetBrains-Mono,ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;line-height:1.25rem;--cbp-tab-width:2;tab-size:var(--cbp-tab-width, 2)"><span style="display:block;padding:16px 0 0 16px;margin-bottom:-1px;width:100%;text-align:left;background-color:#1b1e28"><svg xmlns="http://www.w3.org/2000/svg" width="54" height="14" viewBox="0 0 54 14"><g fill="none" fill-rule="evenodd" transform="translate(1 1)"><circle cx="6" cy="6" r="6" fill="#FF5F56" stroke="#E0443E" stroke-width=".5"></circle><circle cx="26" cy="6" r="6" fill="#FFBD2E" stroke="#DEA123" stroke-width=".5"></circle><circle cx="46" cy="6" r="6" fill="#27C93F" stroke="#1AAB29" stroke-width=".5"></circle></g></svg></span><span role="button" tabindex="0" style="color:#a6accd;display:none" aria-label="Copy" class="code-block-pro-copy-button"><pre class="code-block-pro-copy-button-pre" aria-hidden="true"><textarea class="code-block-pro-copy-button-textarea" tabindex="-1" aria-hidden="true" readonly>% tg_talk
+Sounds good. What do you want to tackle next?
+Phrase: deliberate step / thoughtful move
+Theme: careful decision language
+Tone: careful
+Meaning: Good for pushing back against random experimentation in favor of one intentional step.
+Example:
+A: Do you want to try a bunch of small changes?
+B: Not really. I think one thoughtful move is better.</textarea></pre><svg xmlns="http://www.w3.org/2000/svg" style="width:24px;height:24px" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path class="with-check" stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path><path class="without-check" stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg></span><pre class="shiki poimandres" style="background-color: #1b1e28" tabindex="0"><code><span class="line"><span style="color: #91B4D5">%</span><span style="color: #A6ACCD"> </span><span style="color: #ADD7FF">tg_talk</span></span>
+<span class="line"><span style="color: #91B4D5">Sounds</span><span style="color: #A6ACCD"> </span><span style="color: #ADD7FF">good.</span><span style="color: #A6ACCD"> </span><span style="color: #ADD7FF">What</span><span style="color: #A6ACCD"> </span><span style="color: #ADD7FF">do</span><span style="color: #A6ACCD"> </span><span style="color: #ADD7FF">you</span><span style="color: #A6ACCD"> </span><span style="color: #ADD7FF">want</span><span style="color: #A6ACCD"> </span><span style="color: #ADD7FF">to</span><span style="color: #A6ACCD"> </span><span style="color: #ADD7FF">tackle</span><span style="color: #A6ACCD"> </span><span style="color: #ADD7FF">next?</span></span>
+<span class="line"><span style="color: #91B4D5">Phrase:</span><span style="color: #A6ACCD"> </span><span style="color: #ADD7FF">deliberate</span><span style="color: #A6ACCD"> </span><span style="color: #ADD7FF">step</span><span style="color: #A6ACCD"> </span><span style="color: #ADD7FF">/</span><span style="color: #A6ACCD"> </span><span style="color: #ADD7FF">thoughtful</span><span style="color: #A6ACCD"> </span><span style="color: #ADD7FF">move</span></span>
+<span class="line"><span style="color: #91B4D5">Theme:</span><span style="color: #A6ACCD"> </span><span style="color: #ADD7FF">careful</span><span style="color: #A6ACCD"> </span><span style="color: #ADD7FF">decision</span><span style="color: #A6ACCD"> </span><span style="color: #ADD7FF">language</span></span>
+<span class="line"><span style="color: #91B4D5">Tone:</span><span style="color: #A6ACCD"> </span><span style="color: #ADD7FF">careful</span></span>
+<span class="line"><span style="color: #91B4D5">Meaning:</span><span style="color: #A6ACCD"> </span><span style="color: #ADD7FF">Good</span><span style="color: #A6ACCD"> </span><span style="color: #ADD7FF">for</span><span style="color: #A6ACCD"> </span><span style="color: #ADD7FF">pushing</span><span style="color: #A6ACCD"> </span><span style="color: #ADD7FF">back</span><span style="color: #A6ACCD"> </span><span style="color: #ADD7FF">against</span><span style="color: #A6ACCD"> </span><span style="color: #ADD7FF">random</span><span style="color: #A6ACCD"> </span><span style="color: #ADD7FF">experimentation</span><span style="color: #A6ACCD"> </span><span style="color: #ADD7FF">in</span><span style="color: #A6ACCD"> </span><span style="color: #ADD7FF">favor</span><span style="color: #A6ACCD"> </span><span style="color: #ADD7FF">of</span><span style="color: #A6ACCD"> </span><span style="color: #ADD7FF">one</span><span style="color: #A6ACCD"> </span><span style="color: #ADD7FF">intentional</span><span style="color: #A6ACCD"> </span><span style="color: #ADD7FF">step.</span></span>
+<span class="line"><span style="color: #91B4D5">Example:</span></span>
+<span class="line"><span style="color: #91B4D5">A:</span><span style="color: #A6ACCD"> </span><span style="color: #ADD7FF">Do</span><span style="color: #A6ACCD"> </span><span style="color: #ADD7FF">you</span><span style="color: #A6ACCD"> </span><span style="color: #ADD7FF">want</span><span style="color: #A6ACCD"> </span><span style="color: #ADD7FF">to</span><span style="color: #A6ACCD"> </span><span style="color: #ADD7FF">try</span><span style="color: #A6ACCD"> </span><span style="color: #ADD7FF">a</span><span style="color: #A6ACCD"> </span><span style="color: #ADD7FF">bunch</span><span style="color: #A6ACCD"> </span><span style="color: #ADD7FF">of</span><span style="color: #A6ACCD"> </span><span style="color: #ADD7FF">small</span><span style="color: #A6ACCD"> </span><span style="color: #ADD7FF">changes?</span></span>
+<span class="line"><span style="color: #91B4D5">B:</span><span style="color: #A6ACCD"> </span><span style="color: #ADD7FF">Not</span><span style="color: #A6ACCD"> </span><span style="color: #ADD7FF">really.</span><span style="color: #A6ACCD"> </span><span style="color: #ADD7FF">I</span><span style="color: #A6ACCD"> </span><span style="color: #ADD7FF">think</span><span style="color: #A6ACCD"> </span><span style="color: #ADD7FF">one</span><span style="color: #A6ACCD"> </span><span style="color: #ADD7FF">thoughtful</span><span style="color: #A6ACCD"> </span><span style="color: #ADD7FF">move</span><span style="color: #A6ACCD"> </span><span style="color: #ADD7FF">is</span><span style="color: #A6ACCD"> </span><span style="color: #ADD7FF">better.</span></span></code></pre></div>
+<!-- /wp:kevinbatdorf/code-block-pro -->
+
+<!-- wp:paragraph -->
+<p>こういう例があると、初めて見る人も「これは何が楽しいのか」を掴みやすくなります。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading"><code>install.sh</code> で、試せる状態にする</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>GitHub にコードを置くだけでも公開はできます。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>でも、それだけだと、実際に使い始めるまでに少しハードルが高くなります。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>zsh スクリプトをどこに置くのか。実行権限はどうするのか。PATH は通っているのか。状態ファイルはどこに作るのか。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>そこを毎回 README だけで説明するよりも、<code>install.sh</code> にまとめたほうが使いやすくなります。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>このアプリを利用する側から見ると、こういう流れになります。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:kevinbatdorf/code-block-pro {"code":"git clone https://github.com/k1117n-cmyk/termgotchi.git\ncd termgotchi\n./install.sh","codeHTML":"\u003cpre class=\u0022shiki poimandres\u0022 style=\u0022background-color: #1b1e28\u0022 tabindex=\u00220\u0022\u003e\u003ccode\u003e\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #91B4D5\u0022\u003egit\u003c/span\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #ADD7FF\u0022\u003eclone\u003c/span\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #ADD7FF\u0022\u003ehttps://github.com/k1117n-cmyk/termgotchi.git\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #91B4D5\u0022\u003ecd\u003c/span\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #ADD7FF\u0022\u003etermgotchi\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #91B4D5\u0022\u003e./install.sh\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/pre\u003e","language":"bash","theme":"poimandres","bgColor":"#1b1e28","textColor":"#a6accd","fontSize":".875rem","fontFamily":"Code-Pro-JetBrains-Mono","lineHeight":"1.25rem","clampFonts":false,"lineNumbers":false,"headerType":"headlights","disablePadding":false,"footerType":"none","enableMaxHeight":false,"seeMoreType":"","seeMoreString":"","seeMoreAfterLine":"","seeMoreTransition":false,"seeMoreCollapse":false,"seeMoreCollapseString":"","highlightingHover":false,"lineHighlightColor":"rgba(131, 148, 240, 0.2)","copyButton":true,"copyButtonType":"heroicons","copyButtonUseTextarea":true,"useTabs":false} -->
+<div class="wp-block-kevinbatdorf-code-block-pro" data-code-block-pro-font-family="Code-Pro-JetBrains-Mono" style="font-size:.875rem;font-family:Code-Pro-JetBrains-Mono,ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;line-height:1.25rem;--cbp-tab-width:2;tab-size:var(--cbp-tab-width, 2)"><span style="display:block;padding:16px 0 0 16px;margin-bottom:-1px;width:100%;text-align:left;background-color:#1b1e28"><svg xmlns="http://www.w3.org/2000/svg" width="54" height="14" viewBox="0 0 54 14"><g fill="none" fill-rule="evenodd" transform="translate(1 1)"><circle cx="6" cy="6" r="6" fill="#FF5F56" stroke="#E0443E" stroke-width=".5"></circle><circle cx="26" cy="6" r="6" fill="#FFBD2E" stroke="#DEA123" stroke-width=".5"></circle><circle cx="46" cy="6" r="6" fill="#27C93F" stroke="#1AAB29" stroke-width=".5"></circle></g></svg></span><span role="button" tabindex="0" style="color:#a6accd;display:none" aria-label="Copy" class="code-block-pro-copy-button"><pre class="code-block-pro-copy-button-pre" aria-hidden="true"><textarea class="code-block-pro-copy-button-textarea" tabindex="-1" aria-hidden="true" readonly>git clone https://github.com/k1117n-cmyk/termgotchi.git
+cd termgotchi
+./install.sh</textarea></pre><svg xmlns="http://www.w3.org/2000/svg" style="width:24px;height:24px" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path class="with-check" stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path><path class="without-check" stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg></span><pre class="shiki poimandres" style="background-color: #1b1e28" tabindex="0"><code><span class="line"><span style="color: #91B4D5">git</span><span style="color: #A6ACCD"> </span><span style="color: #ADD7FF">clone</span><span style="color: #A6ACCD"> </span><span style="color: #ADD7FF">https://github.com/k1117n-cmyk/termgotchi.git</span></span>
+<span class="line"><span style="color: #91B4D5">cd</span><span style="color: #A6ACCD"> </span><span style="color: #ADD7FF">termgotchi</span></span>
+<span class="line"><span style="color: #91B4D5">./install.sh</span></span></code></pre></div>
+<!-- /wp:kevinbatdorf/code-block-pro -->
+
+<!-- wp:paragraph -->
+<p>インストール用スクリプトでやりたいことは、安全に管理ができるようにすることです。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"className":"wp-block-list -list-under-dashed"} -->
+<ul class="wp-block-list -list-under-dashed"><!-- wp:list-item -->
+<li>必要なコマンドを配置する</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>実行権限を付ける</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>PATH の確認や案内をする</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>既存ファイルをむやみに上書きしない</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>状態ファイルの置き場所を分かりやすくする</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>この部分も、最初の段階から同じ方針で続けています。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p><span class="swl-bg-color has-swl-pale-04-background-color">勝手に大きく環境を書き換えず、必要なところだけを小さく触る。</span></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>ターミナルアプリは、使う人の shell 環境の中に入っていくものです。だからこそ、インストール処理は慎重にしたいと思っています。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">アンインストールできることも、配布の一部</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>小さな個人ツールだと、インストール手順だけを書いて終わりにすることもあると思います。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>でも、配布するならアンインストールも、インストール以上に大事だと思うのです。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>試してみたけれど合わなかった。別の場所に入れ直したい。状態ファイルを残したままコマンドだけ消したい。そういうことは普通にあります。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>なので <code>uninstall.sh</code> も用意しておくと、利用する側の心理的な負担がかなり下がります。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:kevinbatdorf/code-block-pro {"code":"./uninstall.sh","codeHTML":"\u003cpre class=\u0022shiki poimandres\u0022 style=\u0022background-color: #1b1e28\u0022 tabindex=\u00220\u0022\u003e\u003ccode\u003e\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #91B4D5\u0022\u003e./uninstall.sh\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/pre\u003e","language":"bash","theme":"poimandres","bgColor":"#1b1e28","textColor":"#a6accd","fontSize":".875rem","fontFamily":"Code-Pro-JetBrains-Mono","lineHeight":"1.25rem","clampFonts":false,"lineNumbers":false,"headerType":"headlights","disablePadding":false,"footerType":"none","enableMaxHeight":false,"seeMoreType":"","seeMoreString":"","seeMoreAfterLine":"","seeMoreTransition":false,"seeMoreCollapse":false,"seeMoreCollapseString":"","highlightingHover":false,"lineHighlightColor":"rgba(131, 148, 240, 0.2)","copyButton":true,"copyButtonType":"heroicons","copyButtonUseTextarea":true,"useTabs":false} -->
+<div class="wp-block-kevinbatdorf-code-block-pro" data-code-block-pro-font-family="Code-Pro-JetBrains-Mono" style="font-size:.875rem;font-family:Code-Pro-JetBrains-Mono,ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;line-height:1.25rem;--cbp-tab-width:2;tab-size:var(--cbp-tab-width, 2)"><span style="display:block;padding:16px 0 0 16px;margin-bottom:-1px;width:100%;text-align:left;background-color:#1b1e28"><svg xmlns="http://www.w3.org/2000/svg" width="54" height="14" viewBox="0 0 54 14"><g fill="none" fill-rule="evenodd" transform="translate(1 1)"><circle cx="6" cy="6" r="6" fill="#FF5F56" stroke="#E0443E" stroke-width=".5"></circle><circle cx="26" cy="6" r="6" fill="#FFBD2E" stroke="#DEA123" stroke-width=".5"></circle><circle cx="46" cy="6" r="6" fill="#27C93F" stroke="#1AAB29" stroke-width=".5"></circle></g></svg></span><span role="button" tabindex="0" style="color:#a6accd;display:none" aria-label="Copy" class="code-block-pro-copy-button"><pre class="code-block-pro-copy-button-pre" aria-hidden="true"><textarea class="code-block-pro-copy-button-textarea" tabindex="-1" aria-hidden="true" readonly>./uninstall.sh</textarea></pre><svg xmlns="http://www.w3.org/2000/svg" style="width:24px;height:24px" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path class="with-check" stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path><path class="without-check" stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg></span><pre class="shiki poimandres" style="background-color: #1b1e28" tabindex="0"><code><span class="line"><span style="color: #91B4D5">./uninstall.sh</span></span></code></pre></div>
+<!-- /wp:kevinbatdorf/code-block-pro -->
+
+<!-- wp:paragraph -->
+<p>ここで気をつけたいのは、何を消すかをはっきり分けることです。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"className":"wp-block-list -list-under-dashed"} -->
+<ul class="wp-block-list -list-under-dashed"><!-- wp:list-item -->
+<li>コマンドだけ消すのか</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>状態ファイルも消すのか</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>履歴も消すのか</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>バックアップを残すのか</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>Term-gotchi の場合、状態ファイルはその人が育てた相棒そのものです。アプリ本体よりも、むしろそちらのほうが個人的なデータです。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>だから、削除処理ではコードと状態を同じ扱いにしないほうが安全です。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">更新は <code>git pull</code> で済むようにしたい</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>Git で配る一番の良さは、最初の配布よりも、その後の更新にあります。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>zip ファイルで配ることもできます。小さなスクリプトなら、それでも十分な場面はあります。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>でも、あとから機能を足したり、不具合を直したり、README を更新したりするなら、<code>git pull</code> で追い続けるほうが後々楽になります。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:kevinbatdorf/code-block-pro {"code":"cd termgotchi\ngit pull\n./install.sh","codeHTML":"\u003cpre class=\u0022shiki poimandres\u0022 style=\u0022background-color: #1b1e28\u0022 tabindex=\u00220\u0022\u003e\u003ccode\u003e\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #91B4D5\u0022\u003ecd\u003c/span\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #ADD7FF\u0022\u003etermgotchi\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #91B4D5\u0022\u003egit\u003c/span\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #ADD7FF\u0022\u003epull\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #91B4D5\u0022\u003e./install.sh\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/pre\u003e","language":"bash","theme":"poimandres","bgColor":"#1b1e28","textColor":"#a6accd","fontSize":".875rem","fontFamily":"Code-Pro-JetBrains-Mono","lineHeight":"1.25rem","clampFonts":false,"lineNumbers":false,"headerType":"headlights","disablePadding":false,"footerType":"none","enableMaxHeight":false,"seeMoreType":"","seeMoreString":"","seeMoreAfterLine":"","seeMoreTransition":false,"seeMoreCollapse":false,"seeMoreCollapseString":"","highlightingHover":false,"lineHighlightColor":"rgba(131, 148, 240, 0.2)","copyButton":true,"copyButtonType":"heroicons","copyButtonUseTextarea":true,"useTabs":false} -->
+<div class="wp-block-kevinbatdorf-code-block-pro" data-code-block-pro-font-family="Code-Pro-JetBrains-Mono" style="font-size:.875rem;font-family:Code-Pro-JetBrains-Mono,ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;line-height:1.25rem;--cbp-tab-width:2;tab-size:var(--cbp-tab-width, 2)"><span style="display:block;padding:16px 0 0 16px;margin-bottom:-1px;width:100%;text-align:left;background-color:#1b1e28"><svg xmlns="http://www.w3.org/2000/svg" width="54" height="14" viewBox="0 0 54 14"><g fill="none" fill-rule="evenodd" transform="translate(1 1)"><circle cx="6" cy="6" r="6" fill="#FF5F56" stroke="#E0443E" stroke-width=".5"></circle><circle cx="26" cy="6" r="6" fill="#FFBD2E" stroke="#DEA123" stroke-width=".5"></circle><circle cx="46" cy="6" r="6" fill="#27C93F" stroke="#1AAB29" stroke-width=".5"></circle></g></svg></span><span role="button" tabindex="0" style="color:#a6accd;display:none" aria-label="Copy" class="code-block-pro-copy-button"><pre class="code-block-pro-copy-button-pre" aria-hidden="true"><textarea class="code-block-pro-copy-button-textarea" tabindex="-1" aria-hidden="true" readonly>cd termgotchi
+git pull
+./install.sh</textarea></pre><svg xmlns="http://www.w3.org/2000/svg" style="width:24px;height:24px" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path class="with-check" stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path><path class="without-check" stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg></span><pre class="shiki poimandres" style="background-color: #1b1e28" tabindex="0"><code><span class="line"><span style="color: #91B4D5">cd</span><span style="color: #A6ACCD"> </span><span style="color: #ADD7FF">termgotchi</span></span>
+<span class="line"><span style="color: #91B4D5">git</span><span style="color: #A6ACCD"> </span><span style="color: #ADD7FF">pull</span></span>
+<span class="line"><span style="color: #91B4D5">./install.sh</span></span></code></pre></div>
+<!-- /wp:kevinbatdorf/code-block-pro -->
+
+<!-- wp:paragraph -->
+<p>この流れにしておけば、リポジトリ側のコードを更新してから、必要に応じてインストール済みコマンドを入れ直せます。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>ここでも大事なのは、ユーザーの状態ファイルを壊さないことです。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>コードは Git で更新する。状態はユーザーの環境に残す。CHANGELOG を見れば、何が変わったか分かる。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>この分担ができていると、Term-gotchi はかなり更新しやすくなります。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading"><code>CHANGELOG.md</code> は、読むための履歴にする</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>Git の履歴があれば、変更内容はすべて残ります。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>それでも <code>CHANGELOG.md</code> を書く意味はあります。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p><code>git log</code> は開発者向けの細かい履歴です。一方で <code>CHANGELOG.md</code> は、使う人に向けた読みやすい履歴です。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>例えば、コミットログには細かくこう残っていたとしても、</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:kevinbatdorf/code-block-pro {"code":"Add lesson metadata fields\nAdd tone labels\nAdd two-line examples\nFix tg_talk output spacing","codeHTML":"\u003cpre class=\u0022shiki poimandres\u0022 style=\u0022background-color: #1b1e28\u0022 tabindex=\u00220\u0022\u003e\u003ccode\u003e\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #91B4D5\u0022\u003eAdd\u003c/span\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #ADD7FF\u0022\u003elesson\u003c/span\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #ADD7FF\u0022\u003emetadata\u003c/span\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #ADD7FF\u0022\u003efields\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #91B4D5\u0022\u003eAdd\u003c/span\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #ADD7FF\u0022\u003etone\u003c/span\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #ADD7FF\u0022\u003elabels\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #91B4D5\u0022\u003eAdd\u003c/span\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #ADD7FF\u0022\u003etwo-line\u003c/span\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #ADD7FF\u0022\u003eexamples\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #91B4D5\u0022\u003eFix\u003c/span\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #ADD7FF\u0022\u003etg_talk\u003c/span\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #ADD7FF\u0022\u003eoutput\u003c/span\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e \u003c/span\u003e\u003cspan style=\u0022color: #ADD7FF\u0022\u003espacing\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/pre\u003e","language":"bash","theme":"poimandres","bgColor":"#1b1e28","textColor":"#a6accd","fontSize":".875rem","fontFamily":"Code-Pro-JetBrains-Mono","lineHeight":"1.25rem","clampFonts":false,"lineNumbers":false,"headerType":"headlights","disablePadding":false,"footerType":"none","enableMaxHeight":false,"seeMoreType":"","seeMoreString":"","seeMoreAfterLine":"","seeMoreTransition":false,"seeMoreCollapse":false,"seeMoreCollapseString":"","highlightingHover":false,"lineHighlightColor":"rgba(131, 148, 240, 0.2)","copyButton":true,"copyButtonType":"heroicons","copyButtonUseTextarea":true,"useTabs":false} -->
+<div class="wp-block-kevinbatdorf-code-block-pro" data-code-block-pro-font-family="Code-Pro-JetBrains-Mono" style="font-size:.875rem;font-family:Code-Pro-JetBrains-Mono,ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;line-height:1.25rem;--cbp-tab-width:2;tab-size:var(--cbp-tab-width, 2)"><span style="display:block;padding:16px 0 0 16px;margin-bottom:-1px;width:100%;text-align:left;background-color:#1b1e28"><svg xmlns="http://www.w3.org/2000/svg" width="54" height="14" viewBox="0 0 54 14"><g fill="none" fill-rule="evenodd" transform="translate(1 1)"><circle cx="6" cy="6" r="6" fill="#FF5F56" stroke="#E0443E" stroke-width=".5"></circle><circle cx="26" cy="6" r="6" fill="#FFBD2E" stroke="#DEA123" stroke-width=".5"></circle><circle cx="46" cy="6" r="6" fill="#27C93F" stroke="#1AAB29" stroke-width=".5"></circle></g></svg></span><span role="button" tabindex="0" style="color:#a6accd;display:none" aria-label="Copy" class="code-block-pro-copy-button"><pre class="code-block-pro-copy-button-pre" aria-hidden="true"><textarea class="code-block-pro-copy-button-textarea" tabindex="-1" aria-hidden="true" readonly>Add lesson metadata fields
+Add tone labels
+Add two-line examples
+Fix tg_talk output spacing</textarea></pre><svg xmlns="http://www.w3.org/2000/svg" style="width:24px;height:24px" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path class="with-check" stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path><path class="without-check" stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg></span><pre class="shiki poimandres" style="background-color: #1b1e28" tabindex="0"><code><span class="line"><span style="color: #91B4D5">Add</span><span style="color: #A6ACCD"> </span><span style="color: #ADD7FF">lesson</span><span style="color: #A6ACCD"> </span><span style="color: #ADD7FF">metadata</span><span style="color: #A6ACCD"> </span><span style="color: #ADD7FF">fields</span></span>
+<span class="line"><span style="color: #91B4D5">Add</span><span style="color: #A6ACCD"> </span><span style="color: #ADD7FF">tone</span><span style="color: #A6ACCD"> </span><span style="color: #ADD7FF">labels</span></span>
+<span class="line"><span style="color: #91B4D5">Add</span><span style="color: #A6ACCD"> </span><span style="color: #ADD7FF">two-line</span><span style="color: #A6ACCD"> </span><span style="color: #ADD7FF">examples</span></span>
+<span class="line"><span style="color: #91B4D5">Fix</span><span style="color: #A6ACCD"> </span><span style="color: #ADD7FF">tg_talk</span><span style="color: #A6ACCD"> </span><span style="color: #ADD7FF">output</span><span style="color: #A6ACCD"> </span><span style="color: #ADD7FF">spacing</span></span></code></pre></div>
+<!-- /wp:kevinbatdorf/code-block-pro -->
+
+<!-- wp:paragraph -->
+<p>CHANGELOG では、もう少し使う人目線にまとめられます。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:kevinbatdorf/code-block-pro {"code":"## 0.3.0\n- Expanded tg_talk into a small English-learning mode.\n- Added Phrase, Theme, Tone, Meaning, and Example fields.\n- Improved output readability for short terminal sessions.","codeHTML":"\u003cpre class=\u0022shiki poimandres\u0022 style=\u0022background-color: #1b1e28\u0022 tabindex=\u00220\u0022\u003e\u003ccode\u003e\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e## 0.3.0\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e- Expanded tg_talk into a small English-learning mode.\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e- Added Phrase, Theme, Tone, Meaning, and Example fields.\u003c/span\u003e\u003c/span\u003e\n\u003cspan class=\u0022line\u0022\u003e\u003cspan style=\u0022color: #A6ACCD\u0022\u003e- Improved output readability for short terminal sessions.\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/pre\u003e","language":"tex","theme":"poimandres","bgColor":"#1b1e28","textColor":"#a6accd","fontSize":".875rem","fontFamily":"Code-Pro-JetBrains-Mono","lineHeight":"1.25rem","clampFonts":false,"lineNumbers":false,"headerType":"headlights","disablePadding":false,"footerType":"none","enableMaxHeight":false,"seeMoreType":"","seeMoreString":"","seeMoreAfterLine":"","seeMoreTransition":false,"seeMoreCollapse":false,"seeMoreCollapseString":"","highlightingHover":false,"lineHighlightColor":"rgba(131, 148, 240, 0.2)","copyButton":true,"copyButtonType":"heroicons","copyButtonUseTextarea":true,"useTabs":false} -->
+<div class="wp-block-kevinbatdorf-code-block-pro" data-code-block-pro-font-family="Code-Pro-JetBrains-Mono" style="font-size:.875rem;font-family:Code-Pro-JetBrains-Mono,ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;line-height:1.25rem;--cbp-tab-width:2;tab-size:var(--cbp-tab-width, 2)"><span style="display:block;padding:16px 0 0 16px;margin-bottom:-1px;width:100%;text-align:left;background-color:#1b1e28"><svg xmlns="http://www.w3.org/2000/svg" width="54" height="14" viewBox="0 0 54 14"><g fill="none" fill-rule="evenodd" transform="translate(1 1)"><circle cx="6" cy="6" r="6" fill="#FF5F56" stroke="#E0443E" stroke-width=".5"></circle><circle cx="26" cy="6" r="6" fill="#FFBD2E" stroke="#DEA123" stroke-width=".5"></circle><circle cx="46" cy="6" r="6" fill="#27C93F" stroke="#1AAB29" stroke-width=".5"></circle></g></svg></span><span role="button" tabindex="0" style="color:#a6accd;display:none" aria-label="Copy" class="code-block-pro-copy-button"><pre class="code-block-pro-copy-button-pre" aria-hidden="true"><textarea class="code-block-pro-copy-button-textarea" tabindex="-1" aria-hidden="true" readonly>## 0.3.0
+- Expanded tg_talk into a small English-learning mode.
+- Added Phrase, Theme, Tone, Meaning, and Example fields.
+- Improved output readability for short terminal sessions.</textarea></pre><svg xmlns="http://www.w3.org/2000/svg" style="width:24px;height:24px" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path class="with-check" stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path><path class="without-check" stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg></span><pre class="shiki poimandres" style="background-color: #1b1e28" tabindex="0"><code><span class="line"><span style="color: #A6ACCD">## 0.3.0</span></span>
+<span class="line"><span style="color: #A6ACCD">- Expanded tg_talk into a small English-learning mode.</span></span>
+<span class="line"><span style="color: #A6ACCD">- Added Phrase, Theme, Tone, Meaning, and Example fields.</span></span>
+<span class="line"><span style="color: #A6ACCD">- Improved output readability for short terminal sessions.</span></span></code></pre></div>
+<!-- /wp:kevinbatdorf/code-block-pro -->
+
+<!-- wp:paragraph -->
+<p>細かい作業の履歴と、使う人に伝える変更点は、似ているようで少し違います。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>この 2 つを分けておくと、自分も後から振り返りやすいし、使う人にも何が変わったか伝わりやすくなります。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">GitHub に置くと、プロジェクトの見え方が変わる</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>GitHub に置いたからといって、急に大きなソフトウェアになるわけではありません。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>Term-gotchi はあくまで、zsh で動く小さなターミナルアプリです。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>でも、GitHub に置く前提で整えると、見え方はかなり変わってきます。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"className":"wp-block-list -list-under-dashed"} -->
+<ul class="wp-block-list -list-under-dashed"><!-- wp:list-item -->
+<li>README を読めば何をするものか分かる</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>install.sh</code> で試せる</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>uninstall.sh</code> で戻せる</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>CHANGELOG.md</code> で変更を追える</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>git pull</code> で更新できる</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>こうなると、手元の思いつきスクリプトではなく、小さくても「配れるソフトウェア」になります。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>そして不思議なことに、自分用のツールでも、公開できる形に整えようとすると設計が少し丁寧になります。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>どこまで自動でやるか。どこからはユーザーに確認するか。状態ファイルをどう守るか。README に何を書けば初回体験が伝わるか。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>GitHub に置くというより、<strong>誰かが触れるかもしれない形にする</strong>ことで、プロジェクトの輪郭がはっきりしてくる感じがあります。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">今回の変更で、Term-gotchi は配れる形に近づいた</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>第4回でやったことをまとめると、こうなります。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"className":"wp-block-list -list-under-dashed"} -->
+<ul class="wp-block-list -list-under-dashed"><!-- wp:list-item -->
+<li>Term-gotchi を Git / GitHub で管理できる形にした</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>コードとユーザーごとの状態ファイルを分けた</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>README.md</code> で最初の体験を説明できるようにした</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>CHANGELOG.md</code> で変更の流れを読めるようにした</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>install.sh</code> と <code>uninstall.sh</code> で試しやすく戻しやすい形にした</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li><code>git pull</code> で更新できる土台を作った</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>育成アプリとしての成長記録は <code>tg_history</code> に残る。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>プロジェクトとしての成長記録は Git に残る。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>この 2 つが揃うと、Term-gotchi はかなり面白いものになります。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>相棒は shell の中で育ち、コードは Git の履歴として育つ。小さな zsh アプリでも、ちゃんと「育っていくソフトウェア」になってきました。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">次は、更新体験そのものを育てたい</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>今回で、Term-gotchi は GitHub から clone して試せる形になりました。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>ただ、まだ改善できるところはあります。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"className":"wp-block-list -list-under-dashed"} -->
+<ul class="wp-block-list -list-under-dashed"><!-- wp:list-item -->
+<li><code>tg_update</code> のような更新用コマンドを作る</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>バージョン番号を表示できるようにする</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>release tag を切って更新点を見やすくする</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>Homebrew など、もう少し自然な配布方法を考える</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>インストール時に既存環境をもっと丁寧に検査する</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>つまり、配る形はできたので、次は更新する体験をどう気持ちよくするかです。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>Term-gotchi は、第1回では zsh の中で動く小さな相棒でした。第2回で成長履歴を持ち、第3回で英語の micro lesson を話し、第4回で GitHub から配れる形になりました。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>手元の小さな遊びが、少しずつソフトウェアらしくなっていく。その過程そのものが、今回の記事の一番面白いところだった気がします。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading"><strong>Term-gotchi を GitHub で育てています</strong></h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>Term-gotchi のソースコードは GitHub で公開しています。インストール用スクリプトや配布パッケージ作成用のスクリプトも含めて置いているので、zsh 製の小さなターミナルアプリを作るときの参考にもなると思います。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:loos/button {"hrefUrl":"https://github.com/k1117n-cmyk/termgotchi","isNewTab":true,"color":"blue","className":"is-style-btn_normal"} -->
+<div class="swell-block-button blue_ is-style-btn_normal"><a href="https://github.com/k1117n-cmyk/termgotchi" target="_blank" rel="noopener noreferrer" class="swell-block-button__link"><span>Term-gotchi を GitHub で見る</span></a></div>
+<!-- /wp:loos/button -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">最初から読みたい方へ</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p><span class="swl-bg-color has-swl-pale-04-background-color">今回は、Term-gotchi を Git と GitHub で配布・管理できる形に整えました。</span></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>その出発点となる第1回では、zsh の中で育つ小さな相棒アプリとして、Term-gotchi を最初に動かすところまでを紹介しています。安全なシェル設計、<code>.zshrc</code> への追加方法、状態ファイルの扱いなど、今回の Git 管理の土台になる部分です。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>👉 第1回「ターミナルで育つ相棒を作ろう。<span class="swl-bg-color has-swl-pale-04-background-color">zsh製ミニ育成アプリ『Term-gotchi』開発記」へ戻る</span></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:loos/post-list {"postID":"44414"} /-->
+
+<!-- wp:html -->
+[blog_parts id="32595"]
+<!-- /wp:html -->

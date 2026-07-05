@@ -50,6 +50,7 @@ main() {
 
   tg_copy_file "README.md" "README.md"
   tg_copy_file "README.ja.md" "README.ja.md"
+  tg_copy_file "CHANGELOG.md" "CHANGELOG.md"
   tg_copy_file "VERSION" "VERSION"
   tg_copy_file "install.zsh" "install.zsh"
   tg_copy_file "uninstall.zsh" "uninstall.zsh"
