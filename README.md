@@ -19,10 +19,20 @@ The safe installer, runtime loader, initial state, `tg_status`, care commands, `
 
 ## Install
 
+From a GitHub checkout:
+
 1. Ensure `zsh` and `jq` are available.
 2. Run `zsh ./install.zsh` from the repository root.
 3. Open a new shell, or run `source ~/.zshrc`.
 4. Check with `tg_version` and `tg_status`.
+
+From a release package:
+
+1. Download and extract `termgotchi-<version>.tar.gz` or `termgotchi-<version>.zip`.
+2. Move into the extracted directory.
+3. Run `zsh ./install.zsh`.
+4. Open a new shell, or run `source ~/.zshrc`.
+5. Check with `tg_version` and `tg_status`.
 
 ## Uninstall
 
@@ -77,6 +87,23 @@ termgotchi/
 - [`docs/porting-manual.md`](./docs/porting-manual.md): how to move the app to another Mac or PC
 - [`docs/porting-manual.ja.md`](./docs/porting-manual.ja.md): 日本語版の移植マニュアル
 - [`NEXT.md`](./NEXT.md): restart memo for the next work session
+
+## Release Package
+
+Create a portable package for GitHub Releases:
+
+```sh
+zsh ./scripts/package.zsh
+```
+
+The script creates:
+
+- `dist/termgotchi-<version>/`
+- `dist/termgotchi-<version>.tar.gz`
+- `dist/termgotchi-<version>.zip`
+- `dist/termgotchi-<version>.checksums.txt`
+
+The package includes the runtime, installer, uninstaller, ASCII art, and core docs.
 
 ## MVP Priorities
 

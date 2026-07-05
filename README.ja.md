@@ -17,10 +17,20 @@ Term-gotchi は `zsh` 向けのターミナルコンパニオンです。
 
 ## インストール
 
+GitHub から clone した場合:
+
 1. `zsh` と `jq` が使えることを確認する
 2. リポジトリのルートで `zsh ./install.zsh` を実行する
 3. 新しい shell を開くか、`source ~/.zshrc` を実行する
 4. `tg_version` と `tg_status` で確認する
+
+Release パッケージを使う場合:
+
+1. `termgotchi-<version>.tar.gz` または `termgotchi-<version>.zip` をダウンロードして展開する
+2. 展開したディレクトリに移動する
+3. `zsh ./install.zsh` を実行する
+4. 新しい shell を開くか、`source ~/.zshrc` を実行する
+5. `tg_version` と `tg_status` で確認する
 
 ## アンインストール
 
@@ -79,6 +89,23 @@ termgotchi/
 - [`docs/notebook-setup-ja.md`](./docs/notebook-setup-ja.md): ノートPC移行メモ
 - [`docs/notebook-git-workflow-ja.md`](./docs/notebook-git-workflow-ja.md): ノートPCとの Git 運用手順
 - [`NEXT.md`](./NEXT.md): 次回作業再開用メモ
+
+## 配布パッケージ
+
+GitHub Releases に置くためのポータブルパッケージを作成できます。
+
+```sh
+zsh ./scripts/package.zsh
+```
+
+作成されるもの:
+
+- `dist/termgotchi-<version>/`
+- `dist/termgotchi-<version>.tar.gz`
+- `dist/termgotchi-<version>.zip`
+- `dist/termgotchi-<version>.checksums.txt`
+
+パッケージには、ランタイム、インストーラ、アンインストーラ、ASCII アート、主要ドキュメントが入ります。
 
 ## MVP の優先順位
 

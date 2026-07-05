@@ -1,4 +1,6 @@
 .DS_Store
 local/
+dist/termgotchi-[0-9]*/
 dist/*.tar.gz
 dist/*.zip
+dist/*.checksums.txt
