@@ -3,6 +3,12 @@
 Term-gotchi は `zsh` 向けのターミナルコンパニオンです。  
 普段のコマンドライン作業を、英語学習の雰囲気を持った軽い育成ゲームに変えます。
 
+## 関連記事
+
+- [Term-gotchi: zshで育てるミニペットアプリ](https://pc-fan.net/term-gotchi-zsh-mini-pet-app/)
+- [Term-gotchi 成長記録: shell hook から buddy まで](https://pc-fan.net/term-gotchi-growth-history/)
+- [Term-gotchi tg_talk: ターミナルで英語練習](https://pc-fan.net/term-gotchi-tg-talk-english-practice/)
+
 ## コンセプト
 
 - 普段のターミナル作業が成長の入力になる

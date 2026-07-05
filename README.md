@@ -5,6 +5,12 @@ It turns everyday command-line work into a lightweight raising game with English
 
 Japanese README: [`README.ja.md`](./README.ja.md)
 
+## Articles
+
+- [Term-gotchi: a tiny zsh terminal pet app](https://pc-fan.net/term-gotchi-zsh-mini-pet-app/)
+- [Term-gotchi growth history: from shell hook to buddy](https://pc-fan.net/term-gotchi-growth-history/)
+- [Term-gotchi tg_talk: English practice in the terminal](https://pc-fan.net/term-gotchi-tg-talk-english-practice/)
+
 ## Concept
 
 - Normal terminal work becomes growth input.
