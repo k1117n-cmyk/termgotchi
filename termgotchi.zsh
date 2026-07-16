@@ -1,5 +1,7 @@
-if [[ -n "${TERM_GOTCHI_LOADED:-}" ]]; then
-  return 0
+if [[ -n "${TERM_GOTCHI_LOADED:-}" ]] && [[ -o interactive ]]; then
+  autoload -Uz add-zsh-hook >/dev/null 2>&1
+  add-zsh-hook -d preexec tg_on_command_start >/dev/null 2>&1
+  add-zsh-hook -d precmd tg_on_command_finish >/dev/null 2>&1
 fi
 typeset -g TERM_GOTCHI_LOADED=1
 
@@ -7,7 +9,9 @@ typeset -g TG_HOME="${HOME}/.termgotchi"
 typeset -g TG_STATE_FILE="${TG_HOME}/state.json"
 typeset -g TG_ART_DIR="${TG_HOME}/art"
 typeset -g TG_PENDING_COMMAND=""
-typeset -gr TG_RUNTIME_VERSION="0.1.0"
+if [[ "${(t)TG_RUNTIME_VERSION}" != *readonly* ]]; then
+  typeset -g TG_RUNTIME_VERSION="0.1.1"
+fi
 
 tg_now() {
   date '+%Y-%m-%dT%H:%M:%S%z'
@@ -171,9 +175,11 @@ tg_apply_progress() {
 | .xp = \$rolled_xp
 | .level = \$next_level
 | .xp_to_next = \$next_threshold
-| .vocab_level = ((\$state.vocab_level // 1) + ${vocab_gain})
+| .vocab_level = ([((\$state.vocab_level // 1) + ${vocab_gain}), (if \$next_unique_count > 0 then \$next_unique_count else 1 end)] | max)
 | .form = (
-    if \$next_level >= 3 and \$next_unique_count >= 10 then "buddy"
+    if \$next_level >= 20 and \$next_unique_count >= 100 then "sage"
+    elif \$next_level >= 10 and \$next_unique_count >= 50 then "builder"
+    elif \$next_level >= 3 and \$next_unique_count >= 10 then "buddy"
     elif \$next_level >= 2 then "sprout"
     else "egg"
     end

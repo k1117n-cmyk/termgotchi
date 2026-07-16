@@ -63,9 +63,11 @@ From a release package:
 - `tg_status` shows current state and ASCII art
 - `tg_feed`, `tg_clean`, `tg_talk`, `tg_train` provide direct interaction
 - normal commands grant XP via `preexec` / `precmd`
-- level-up and simple evolution:
+- level-up and command-variety evolution:
   - `egg -> sprout`
   - `sprout -> buddy`
+  - `buddy -> builder`
+  - `builder -> sage`
 
 ## Planned Directory Layout
 
@@ -80,6 +82,8 @@ termgotchi/
     egg.txt
     sprout.txt
     buddy.txt
+    builder.txt
+    sage.txt
   docs/
     spec.md
     architecture.md

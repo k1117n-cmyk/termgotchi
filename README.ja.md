@@ -61,9 +61,11 @@ Release パッケージを使う場合:
 - `tg_status` が現在状態と ASCII アートを表示する
 - `tg_feed`、`tg_clean`、`tg_talk`、`tg_train` で直接インタラクションできる
 - 通常コマンドが `preexec` / `precmd` 経由で XP を与える
-- レベルアップとシンプルな進化:
+- レベルアップとコマンド種類に応じた進化:
   - `egg -> sprout`
   - `sprout -> buddy`
+  - `buddy -> builder`
+  - `builder -> sage`
 
 ## 予定ディレクトリ構成
 
@@ -79,6 +81,8 @@ termgotchi/
     egg.txt
     sprout.txt
     buddy.txt
+    builder.txt
+    sage.txt
   docs/
     spec.md
     architecture.md

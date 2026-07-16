@@ -130,6 +130,8 @@ xp_to_next = 20 + (level - 1) * 10
 
 - `egg -> sprout` when `level >= 2`
 - `sprout -> buddy` when `level >= 3` and `unique_commands.length >= 10`
+- `buddy -> builder` when `level >= 10` and `unique_commands.length >= 50`
+- `builder -> sage` when `level >= 20` and `unique_commands.length >= 100`
 
 ## Care Commands
 
@@ -155,6 +157,7 @@ xp_to_next = 20 + (level - 1) * 10
 
 - `xp +3`
 - `vocab_level +1`
+- `vocab_level` is also kept at least as high as `unique_commands.length`
 - may trigger level-up / evolution
 
 ## Idle Decay
@@ -187,6 +190,8 @@ Important:
 - `egg`
 - `sprout`
 - `buddy`
+- `builder`
+- `sage`
 
 ### Status Message Rules
 
