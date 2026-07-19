@@ -8,6 +8,7 @@ Term-gotchi の変更履歴です。
 
 - Added this `CHANGELOG.md` so project changes can be followed without reading every Git commit.
 - Clarified that user state and local history are separate from the repository contents.
+- Updated `tg_talk` so normal-state messages vary and use `vocab_level` to unlock more lines.
 
 ## 0.1.1 - 2026-07-16
 

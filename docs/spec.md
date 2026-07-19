@@ -152,6 +152,8 @@ xp_to_next = 20 + (level - 1) * 10
 
 - no required state mutation in MVP
 - returns short state-based English message
+- low hunger, health, or mood messages take priority
+- otherwise uses `vocab_level` to unlock a wider set of English messages
 
 ### `tg_train`
 

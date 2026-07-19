@@ -9,6 +9,7 @@ typeset -g TG_HOME="${HOME}/.termgotchi"
 typeset -g TG_STATE_FILE="${TG_HOME}/state.json"
 typeset -g TG_ART_DIR="${TG_HOME}/art"
 typeset -g TG_PENDING_COMMAND=""
+typeset -g TG_SELECTED_TALK_LINE=""
 if [[ "${(t)TG_RUNTIME_VERSION}" != *readonly* ]]; then
   typeset -g TG_RUNTIME_VERSION="0.1.1"
 fi
@@ -488,18 +489,66 @@ tg_clean() {
   printf "You cleaned Term-gotchi. Health: %s, Mood: %s\n" "${next_health}" "${next_mood}"
 }
 
+tg_pick_vocab_talk_line() {
+  local vocab_level="$1"
+  local line_index
+  local -a lines
+
+  lines=(
+    "Let's keep going. I'm learning from your work."
+    "I'm ready for the next command."
+    "Your steady practice is becoming part of my vocabulary."
+  )
+
+  if (( vocab_level >= 10 )); then
+    lines+=(
+      "Small deliberate steps are adding up."
+      "I can follow more of your terminal rhythm now."
+      "That workflow is starting to feel familiar."
+    )
+  fi
+
+  if (( vocab_level >= 25 )); then
+    lines+=(
+      "I noticed the variety in your commands today."
+      "Your command choices are teaching me useful patterns."
+      "We are building a broader working vocabulary together."
+    )
+  fi
+
+  if (( vocab_level >= 50 )); then
+    lines+=(
+      "I can read this session with more context than before."
+      "The repeated practice is turning into fluency."
+      "Your toolkit has a recognizable shape now."
+    )
+  fi
+
+  if (( vocab_level >= 100 )); then
+    lines+=(
+      "I have learned enough vocabulary to notice your habits."
+      "This feels less like random commands and more like craft."
+      "I can keep up with a deeper working session now."
+    )
+  fi
+
+  line_index=$(( (RANDOM % ${#lines[@]}) + 1 ))
+  TG_SELECTED_TALK_LINE="${lines[$line_index]}"
+}
+
 tg_talk() {
   if ! tg_load_state; then
     return 1
   fi
 
-  local hunger health mood line
+  local hunger health mood vocab_level line
   local -a care_lines
 
   care_lines=("${(@f)$(tg_read_care_state_lines)}")
   hunger="${care_lines[1]}"
   health="${care_lines[2]}"
   mood="${care_lines[3]}"
+  vocab_level="$(tg_get_state_value '.vocab_level' '1')"
 
   if (( hunger < 30 )); then
     line="Can we grab a snack soon?"
@@ -508,7 +557,8 @@ tg_talk() {
   elif (( mood < 30 )); then
     line="Talk to me. I need a small boost."
   else
-    line="Let's keep going. I'm learning from your work."
+    tg_pick_vocab_talk_line "${vocab_level}"
+    line="${TG_SELECTED_TALK_LINE}"
   fi
 
   printf '%s\n' "${line}"
