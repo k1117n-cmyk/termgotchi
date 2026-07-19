@@ -6,12 +6,14 @@ Term-gotchi の変更履歴です。
 
 ## Unreleased
 
-- Added this `CHANGELOG.md` so project changes can be followed without reading every Git commit.
-- Clarified that user state and local history are separate from the repository contents.
+## 0.1.2 - 2026-07-19
+
 - Updated `tg_talk` so normal-state messages vary and use `vocab_level` to unlock more lines.
 
 ## 0.1.1 - 2026-07-16
 
+- Added this `CHANGELOG.md` so project changes can be followed without reading every Git commit.
+- Clarified that user state and local history are separate from the repository contents.
 - Kept `vocab_level` at least as high as the number of unique commands learned.
 - Added `builder` and `sage` evolution stages based on level and command variety.
 - Added `builder` and `sage` ASCII art to the portable distribution.
