@@ -4,7 +4,7 @@ Term-gotchi release notes.
 
 This file summarizes user-facing changes without requiring readers to inspect every commit.
 
-## Unreleased
+## 0.2.0 - 2026-08-04
 
 - Expanded `tg_talk` output with Phrase, Theme, Tone, Meaning, and Example fields.
 - Refined `tg_talk` lesson wording around everyday engineering phrases such as `dig in`, `sanity-check`, `edge case`, `unblock`, `follow up`, and `loop in`.
