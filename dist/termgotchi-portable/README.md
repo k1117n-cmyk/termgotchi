@@ -41,7 +41,7 @@ tg_status
 ## Manuals
 
 - English: `docs/porting-manual.md`
-- Japanese: `docs/porting-manual.ja.md`
+- Lesson examples: `docs/tg-talk-examples.md`
 
 ## Notes
 

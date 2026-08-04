@@ -153,7 +153,22 @@ xp_to_next = 20 + (level - 1) * 10
 - no required state mutation in MVP
 - returns short state-based English message
 - low hunger, health, or mood messages take priority
-- otherwise uses `vocab_level` to unlock a wider set of English messages
+- otherwise uses `vocab_level`, time of day, and the last recorded command category to unlock a wider set of English micro-lessons
+- each normal-state lesson includes:
+  - `Phrase`
+  - `Theme`
+  - `Tone`
+  - `Meaning`
+  - two-turn `Example`
+- `Tone` is chosen through the randomly selected lesson, so the distance/attitude changes across repeated `tg_talk` calls
+- lower levels lean toward `casual`, `collaborative`, `cautious`, and `confident`
+- mid levels add `polite`, `methodical`, `direct`, and `pragmatic`
+- higher levels add more `formal` team/PR/release language
+- command categories include:
+  - `git`: diff/review language
+  - `inspect`: `rg`, `grep`, `find`, `ls`, `sed`, `awk`, `cat`, `less`, `head`, `tail`
+  - `build`: `npm`, `pnpm`, `yarn`, `cargo`, `make`
+  - `edit`: `vi`, `vim`, `nvim`, `code`
 
 ### `tg_train`
 

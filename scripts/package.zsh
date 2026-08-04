@@ -63,7 +63,7 @@ main() {
   tg_copy_file "docs/architecture.md" "docs/architecture.md"
   tg_copy_file "docs/implementation-plan.md" "docs/implementation-plan.md"
   tg_copy_file "docs/porting-manual.md" "docs/porting-manual.md"
-  tg_copy_file "docs/porting-manual.ja.md" "docs/porting-manual.ja.md"
+  tg_copy_file "docs/tg-talk-examples.md" "docs/tg-talk-examples.md"
 
   chmod +x "${PACKAGE_DIR}/install.zsh" "${PACKAGE_DIR}/uninstall.zsh" || \
     tg_fail "failed to mark installer scripts executable"

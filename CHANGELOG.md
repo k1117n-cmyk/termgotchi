@@ -1,10 +1,21 @@
 # CHANGELOG
 
-Term-gotchi の変更履歴です。
+Term-gotchi release notes.
 
-このファイルは、細かいコミットログではなく、使う人が「何が変わったか」を読みやすく追えるようにまとめます。
+This file summarizes user-facing changes without requiring readers to inspect every commit.
 
 ## Unreleased
+
+- Expanded `tg_talk` output with Phrase, Theme, Tone, Meaning, and Example fields.
+- Refined `tg_talk` lesson wording around everyday engineering phrases such as `dig in`, `sanity-check`, `edge case`, `unblock`, `follow up`, and `loop in`.
+- Added time-of-day and last-command context to `tg_talk` lesson selection.
+- Restored more workplace-English lesson lines around `wrap it up`, `in a good groove`, `debugging archaeology`, and `dig into`.
+- Added `dig` variants for investigation, recovering old files, and casual positive reactions.
+- Normalized `tg_talk` tone labels around casual, polite, formal, methodical, direct, collaborative, confident, cautious, and pragmatic usage.
+- Documented that `tg_talk` lesson selection varies by vocab level, time of day, last command category, and random Tone.
+- Updated the `sage` ASCII art.
+- Changed `tg_help` output to English.
+- Removed Japanese documentation from the English package surface, keeping `README.ja.md` as the only Japanese reference.
 
 ## 0.1.2 - 2026-07-19
 
