@@ -7,3 +7,4 @@ dist/*.checksums.txt
 input.png
 output.png
 output.pmg
+docs/promotion-plan.md
