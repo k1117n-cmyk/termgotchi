@@ -73,7 +73,6 @@ Release パッケージを使う場合:
 termgotchi/
   README.md
   README.ja.md
-  NEXT.md
   install.zsh
   uninstall.zsh
   termgotchi.zsh
@@ -96,10 +95,7 @@ termgotchi/
 - [`docs/architecture.md`](./docs/architecture.md): インストールと実行時の構成
 - [`docs/implementation-plan.md`](./docs/implementation-plan.md): MVP の段階と実装順
 - [`docs/porting-manual.md`](./docs/porting-manual.md): 他の Mac / PC へ移す手順
-- [`docs/porting-manual.ja.md`](./docs/porting-manual.ja.md): 移植マニュアル日本語版
-- [`docs/notebook-setup-ja.md`](./docs/notebook-setup-ja.md): ノートPC移行メモ
-- [`docs/notebook-git-workflow-ja.md`](./docs/notebook-git-workflow-ja.md): ノートPCとの Git 運用手順
-- [`NEXT.md`](./NEXT.md): 次回作業再開用メモ
+- [`docs/tg-talk-examples.md`](./docs/tg-talk-examples.md): workplace-English lesson examples
 
 ## 配布パッケージ
 

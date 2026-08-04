@@ -74,7 +74,6 @@ From a release package:
 ```text
 termgotchi/
   README.md
-  NEXT.md
   install.zsh
   uninstall.zsh
   termgotchi.zsh
@@ -97,7 +96,6 @@ termgotchi/
 - [`docs/implementation-plan.md`](./docs/implementation-plan.md): MVP phases and execution order
 - [`docs/porting-manual.md`](./docs/porting-manual.md): how to move the app to another Mac or PC
 - [`docs/tg-talk-examples.md`](./docs/tg-talk-examples.md): workplace-English lesson examples
-- [`NEXT.md`](./NEXT.md): restart memo for the next work session
 
 ## Release Package
 
