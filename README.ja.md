@@ -1,6 +1,9 @@
 # Term-gotchi
 
 [![CI](https://github.com/k1117n-cmyk/termgotchi/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/k1117n-cmyk/termgotchi/actions/workflows/ci.yml)
+![Shell](https://img.shields.io/badge/shell-zsh-89e051)
+![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux-lightgrey)
+![Language](https://img.shields.io/badge/language-Shell-89e051)
 
 Term-gotchi は `zsh` 向けのターミナルコンパニオンです。  
 普段のコマンドライン作業を、英語学習の雰囲気を持った軽い育成ゲームに変えます。
