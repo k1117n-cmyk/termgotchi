@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install zsh
+        run: |
+          if ! command -v zsh >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y zsh
+          fi
+
+      - name: Check zsh syntax
+        run: zsh -n install.zsh uninstall.zsh termgotchi.zsh scripts/package.zsh
+
+      - name: Build release package
+        run: |
+          version="$(tr -d '[:space:]' < VERSION)"
+          rm -rf "dist/termgotchi-${version}"
+          rm -f "dist/termgotchi-${version}.tar.gz"
+          rm -f "dist/termgotchi-${version}.zip"
+          rm -f "dist/termgotchi-${version}.checksums.txt"
+          zsh ./scripts/package.zsh

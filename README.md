@@ -1,5 +1,7 @@
 # Term-gotchi
 
+[![CI](https://github.com/k1117n-cmyk/termgotchi/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/k1117n-cmyk/termgotchi/actions/workflows/ci.yml)
+
 Term-gotchi is a terminal companion for `zsh`.
 It turns everyday command-line work into a lightweight raising game with English-learning flavor.
 

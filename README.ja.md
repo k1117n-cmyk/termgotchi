@@ -1,5 +1,7 @@
 # Term-gotchi
 
+[![CI](https://github.com/k1117n-cmyk/termgotchi/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/k1117n-cmyk/termgotchi/actions/workflows/ci.yml)
+
 Term-gotchi は `zsh` 向けのターミナルコンパニオンです。  
 普段のコマンドライン作業を、英語学習の雰囲気を持った軽い育成ゲームに変えます。
 
