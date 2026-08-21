@@ -14,6 +14,6 @@ Set Framerate 30
 Set Theme "Builtin Dark"
 Set CursorBlink false
 
-Type "zsh /Users/noi/termgotchi/demo/termgotchi-demo.zsh"
+Type "zsh demo/termgotchi-demo.zsh"
 Enter
 Sleep 25s
