@@ -11,7 +11,7 @@ Set FontFamily "Menlo"
 Set TypingSpeed 45ms
 Set Padding 28
 Set Framerate 30
-Set Theme "Catppuccin Mocha"
+Set Theme "Builtin Dark"
 Set CursorBlink false
 
 Type "zsh /Users/noi/termgotchi/demo/termgotchi-demo.zsh"
