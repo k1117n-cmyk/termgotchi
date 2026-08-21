@@ -85,24 +85,24 @@ pause 1.1
 set_growth_stage egg 1 0 0 1 "A new terminal companion."
 prompt "tg_status  # egg"
 tg_status
-pause 1.6
+pause 2.4
 
 set_growth_stage sprout 2 5 8 4 "A tiny sprout appears."
 prompt "tg_status  # sprout"
 tg_status
-pause 1.6
+pause 2.4
 
 set_growth_stage buddy 3 9 18 10 "Your buddy is ready to help."
 prompt "tg_status  # buddy"
 tg_status
-pause 1.6
+pause 2.4
 
 set_growth_stage builder 10 12 55 28 "Builder mode unlocked."
 prompt "tg_status  # builder"
 tg_status
-pause 1.6
+pause 2.4
 
 set_growth_stage sage 20 18 120 60 "Sage mode unlocked."
 prompt "tg_status  # sage"
 tg_status
-pause 2.4
+pause 3.4

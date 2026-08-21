@@ -16,4 +16,4 @@ Set CursorBlink false
 
 Type "zsh demo/termgotchi-demo.zsh"
 Enter
-Sleep 25s
+Sleep 30s
