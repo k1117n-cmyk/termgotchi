@@ -8,6 +8,10 @@
 Term-gotchi is a terminal companion for `zsh`.
 It turns everyday command-line work into a lightweight raising game with English-learning flavor.
 
+## Demo
+
+![Term-gotchi demo](assets/termgotchi-demo.gif)
+
 Japanese README: [`README.ja.md`](./README.ja.md)
 
 ## Articles
