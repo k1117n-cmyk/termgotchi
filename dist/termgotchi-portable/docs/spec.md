@@ -130,6 +130,8 @@ xp_to_next = 20 + (level - 1) * 10
 
 - `egg -> sprout` when `level >= 2`
 - `sprout -> buddy` when `level >= 3` and `unique_commands.length >= 10`
+- `buddy -> builder` when `level >= 10` and `unique_commands.length >= 50`
+- `builder -> sage` when `level >= 20` and `unique_commands.length >= 100`
 
 ## Care Commands
 
@@ -150,11 +152,29 @@ xp_to_next = 20 + (level - 1) * 10
 
 - no required state mutation in MVP
 - returns short state-based English message
+- low hunger, health, or mood messages take priority
+- otherwise uses `vocab_level`, time of day, and the last recorded command category to unlock a wider set of English micro-lessons
+- each normal-state lesson includes:
+  - `Phrase`
+  - `Theme`
+  - `Tone`
+  - `Meaning`
+  - two-turn `Example`
+- `Tone` is chosen through the randomly selected lesson, so the distance/attitude changes across repeated `tg_talk` calls
+- lower levels lean toward `casual`, `collaborative`, `cautious`, and `confident`
+- mid levels add `polite`, `methodical`, `direct`, and `pragmatic`
+- higher levels add more `formal` team/PR/release language
+- command categories include:
+  - `git`: diff/review language
+  - `inspect`: `rg`, `grep`, `find`, `ls`, `sed`, `awk`, `cat`, `less`, `head`, `tail`
+  - `build`: `npm`, `pnpm`, `yarn`, `cargo`, `make`
+  - `edit`: `vi`, `vim`, `nvim`, `code`
 
 ### `tg_train`
 
 - `xp +3`
 - `vocab_level +1`
+- `vocab_level` is also kept at least as high as `unique_commands.length`
 - may trigger level-up / evolution
 
 ## Idle Decay
@@ -187,6 +207,8 @@ Important:
 - `egg`
 - `sprout`
 - `buddy`
+- `builder`
+- `sage`
 
 ### Status Message Rules
 

@@ -4,3 +4,7 @@ dist/termgotchi-[0-9]*/
 dist/*.tar.gz
 dist/*.zip
 dist/*.checksums.txt
+input.png
+output.png
+output.pmg
+docs/promotion-plan.md

@@ -1,7 +1,16 @@
 # Term-gotchi
 
+[![CI](https://github.com/k1117n-cmyk/termgotchi/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/k1117n-cmyk/termgotchi/actions/workflows/ci.yml)
+![Shell](https://img.shields.io/badge/shell-zsh-89e051)
+![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux-lightgrey)
+![Language](https://img.shields.io/badge/language-Shell-89e051)
+
 Term-gotchi is a terminal companion for `zsh`.
 It turns everyday command-line work into a lightweight raising game with English-learning flavor.
+
+## Demo
+
+![Term-gotchi demo](assets/termgotchi-demo.gif)
 
 Japanese README: [`README.ja.md`](./README.ja.md)
 
@@ -63,16 +72,17 @@ From a release package:
 - `tg_status` shows current state and ASCII art
 - `tg_feed`, `tg_clean`, `tg_talk`, `tg_train` provide direct interaction
 - normal commands grant XP via `preexec` / `precmd`
-- level-up and simple evolution:
+- level-up and command-variety evolution:
   - `egg -> sprout`
   - `sprout -> buddy`
+  - `buddy -> builder`
+  - `builder -> sage`
 
 ## Planned Directory Layout
 
 ```text
 termgotchi/
   README.md
-  NEXT.md
   install.zsh
   uninstall.zsh
   termgotchi.zsh
@@ -80,6 +90,8 @@ termgotchi/
     egg.txt
     sprout.txt
     buddy.txt
+    builder.txt
+    sage.txt
   docs/
     spec.md
     architecture.md
@@ -92,8 +104,7 @@ termgotchi/
 - [`docs/architecture.md`](./docs/architecture.md): install/runtime structure
 - [`docs/implementation-plan.md`](./docs/implementation-plan.md): MVP phases and execution order
 - [`docs/porting-manual.md`](./docs/porting-manual.md): how to move the app to another Mac or PC
-- [`docs/porting-manual.ja.md`](./docs/porting-manual.ja.md): 日本語版の移植マニュアル
-- [`NEXT.md`](./NEXT.md): restart memo for the next work session
+- [`docs/tg-talk-examples.md`](./docs/tg-talk-examples.md): workplace-English lesson examples
 
 ## Release Package
 

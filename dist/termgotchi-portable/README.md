@@ -7,8 +7,12 @@ This directory is the portable distribution package for moving Term-gotchi to an
 - `install.zsh`
 - `uninstall.zsh`
 - `termgotchi.zsh`
+- `VERSION`
+- `CHANGELOG.md`
 - `art/`
 - `docs/`
+
+The `art/` directory includes `egg`, `sprout`, `buddy`, `builder`, and `sage` forms.
 
 ## Quick Start
 
@@ -37,7 +41,7 @@ tg_status
 ## Manuals
 
 - English: `docs/porting-manual.md`
-- Japanese: `docs/porting-manual.ja.md`
+- Lesson examples: `docs/tg-talk-examples.md`
 
 ## Notes
 

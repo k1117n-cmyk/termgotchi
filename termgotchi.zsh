@@ -1,5 +1,7 @@
-if [[ -n "${TERM_GOTCHI_LOADED:-}" ]]; then
-  return 0
+if [[ -n "${TERM_GOTCHI_LOADED:-}" ]] && [[ -o interactive ]]; then
+  autoload -Uz add-zsh-hook >/dev/null 2>&1
+  add-zsh-hook -d preexec tg_on_command_start >/dev/null 2>&1
+  add-zsh-hook -d precmd tg_on_command_finish >/dev/null 2>&1
 fi
 typeset -g TERM_GOTCHI_LOADED=1
 
@@ -7,7 +9,16 @@ typeset -g TG_HOME="${HOME}/.termgotchi"
 typeset -g TG_STATE_FILE="${TG_HOME}/state.json"
 typeset -g TG_ART_DIR="${TG_HOME}/art"
 typeset -g TG_PENDING_COMMAND=""
-typeset -gr TG_RUNTIME_VERSION="0.1.0"
+typeset -g TG_SELECTED_TALK_LINE=""
+typeset -g TG_SELECTED_TALK_PHRASE=""
+typeset -g TG_SELECTED_TALK_THEME=""
+typeset -g TG_SELECTED_TALK_TONE=""
+typeset -g TG_SELECTED_TALK_MEANING=""
+typeset -g TG_SELECTED_TALK_EXAMPLE_A=""
+typeset -g TG_SELECTED_TALK_EXAMPLE_B=""
+if [[ "${(t)TG_RUNTIME_VERSION}" != *readonly* ]]; then
+  typeset -g TG_RUNTIME_VERSION="0.1.1"
+fi
 
 tg_now() {
   date '+%Y-%m-%dT%H:%M:%S%z'
@@ -171,9 +182,11 @@ tg_apply_progress() {
 | .xp = \$rolled_xp
 | .level = \$next_level
 | .xp_to_next = \$next_threshold
-| .vocab_level = ((\$state.vocab_level // 1) + ${vocab_gain})
+| .vocab_level = ([((\$state.vocab_level // 1) + ${vocab_gain}), (if \$next_unique_count > 0 then \$next_unique_count else 1 end)] | max)
 | .form = (
-    if \$next_level >= 3 and \$next_unique_count >= 10 then "buddy"
+    if \$next_level >= 20 and \$next_unique_count >= 100 then "sage"
+    elif \$next_level >= 10 and \$next_unique_count >= 50 then "builder"
+    elif \$next_level >= 3 and \$next_unique_count >= 10 then "buddy"
     elif \$next_level >= 2 then "sprout"
     else "egg"
     end
@@ -482,18 +495,186 @@ tg_clean() {
   printf "You cleaned Term-gotchi. Health: %s, Mood: %s\n" "${next_health}" "${next_mood}"
 }
 
+tg_get_time_bucket() {
+  local hour
+
+  hour="$(date '+%H')"
+
+  if (( hour < 12 )); then
+    printf 'morning'
+  elif (( hour < 18 )); then
+    printf 'afternoon'
+  else
+    printf 'evening'
+  fi
+}
+
+tg_get_command_category() {
+  local command_name="${1:-}"
+
+  case "${command_name}" in
+    git)
+      printf 'git'
+      ;;
+    rg|grep|find|ls|sed|awk|cat|less|head|tail)
+      printf 'inspect'
+      ;;
+    npm|pnpm|yarn|cargo|make)
+      printf 'build'
+      ;;
+    vi|vim|nvim|code)
+      printf 'edit'
+      ;;
+    *)
+      printf 'general'
+      ;;
+  esac
+}
+
+tg_pick_vocab_talk_line() {
+  local vocab_level="$1"
+  local time_bucket="${2:-}"
+  local command_category="${3:-general}"
+  local lesson_index lesson
+  local -a lessons
+
+  lessons=(
+    "Let us take a quick look before we change anything.|take a quick look / change anything|casual attention-directing phrases|cautious|Useful when you want to inspect the situation before making edits.|A: Should I patch it right away?|B: Not yet. Let us take a quick look first."
+    "I am with you. Let us keep the momentum going.|keep the momentum going / I am with you|workplace momentum and pair flow|collaborative|Useful when the work is going well and you want to continue without overthinking.|A: Should we keep going?|B: Yeah. Let us keep the momentum going."
+    "Sounds good. What do you want to tackle next?|tackle next / sounds good|next-task handoff|casual|Common for moving from one finished task to the next in a working session.|A: The tests are green now.|B: Sounds good. What do you want to tackle next?"
+    "One sec. Let me check this out first.|one sec / check this out|casual review requests|casual|Used when you need a short moment to inspect something before answering.|A: Can you tell what changed here?|B: One sec. Let me check this out first."
+    "I am on it. Let us make a small, clean pass.|I am on it / take a pass|ownership and follow-through|confident|Useful when you accept a task and plan to make a focused improvement.|A: Can you take a pass at this?|B: I am on it. I will make a small, clean pass."
+    "A quiet look around might help us spot the issue.|quiet look around / spot the issue|careful issue spotting|cautious|Useful when you want to inspect calmly and notice what is actually wrong.|A: Should we jump straight into a fix?|B: Maybe not. A quiet look around might help."
+  )
+
+  case "${time_bucket}" in
+    morning)
+      lessons+=(
+        "I like exploratory work in the morning. Let us inspect things.|inspect things / exploratory work|morning investigation language|methodical|Useful when you are still mapping the problem and do not want to jump to a fix.|A: Do we know what is broken yet?|B: Not really. Let us inspect things first."
+      )
+      ;;
+    afternoon)
+      lessons+=(
+        "Let us narrow this down before the afternoon gets away from us.|narrow this down / gets away from us|focused afternoon debugging|direct|Useful when you want to reduce a broad problem to something manageable.|A: There are a few possible causes.|B: Let us narrow this down first."
+      )
+      ;;
+    evening)
+      lessons+=(
+        "Let us keep this tight and avoid a late-day rabbit hole.|keep this tight / rabbit hole|late-day scope control|pragmatic|Useful when you want to avoid opening a large investigation late in the day.|A: Should we refactor this whole area?|B: Not tonight. Let us keep this tight."
+        "Night is not bad for a little debugging archaeology.|debugging archaeology / dig in|slow, methodical debugging|methodical|Focuses on careful investigation instead of jumping straight to conclusions.|A: Should we slow down and dig into this?|B: I think so. We need a clearer trace."
+        "We do not need to rush. One thoughtful move is enough tonight.|manageable / make it count|night work pacing|cautious|Useful when the task is still manageable and you want one intentional step to matter.|A: Should we try a few more random fixes?|B: No. One thoughtful move is enough tonight."
+      )
+      ;;
+  esac
+
+  case "${command_category}" in
+    git)
+      lessons+=(
+        "Let us take a look at the diff before we decide anything.|take a look at the diff / decide anything|code review and diff reading|cautious|Common before reviewing, committing, or changing code based on a diff.|A: Should we commit this now?|B: Let us take a look at the diff first."
+        "This change looks small, but the diff tells the story.|the diff tells the story / looks small|review judgment|methodical|Useful when a small-looking change may still have important details in the diff.|A: Is this just a tiny cleanup?|B: Maybe, but the diff tells the story."
+      )
+      ;;
+    inspect)
+      lessons+=(
+        "Let us follow that clue and see where it leads.|follow that clue / see where it leads|signal-versus-noise thinking|methodical|Useful when a search result or log line gives you a useful direction to investigate.|A: This line shows up in three files.|B: Let us follow that clue."
+        "Could you take a look at this file with me?|take a look / with me|polite review requests|collaborative|Useful when you want another person to inspect something together without sounding demanding.|A: Could you take a look at this file with me?|B: Sure. Let me check this out."
+        "Let us dig into the source code of this script.|dig into / source code|source inspection|methodical|Useful when you need to read the implementation closely instead of guessing from the outside.|A: Should we just rerun it?|B: First, let us dig into the source code."
+        "We need to dig into why the line endings got corrupted.|dig into why / got corrupted|root-cause investigation|cautious|Common when you are investigating why a file or workflow broke in a specific way.|A: Why does this file look different now?|B: We need to dig into why the line endings got corrupted."
+        "Let us dig up the backup files before we guess.|dig up / backup files|finding old context|pragmatic|Useful when you need to find older files or records before deciding what changed.|A: Can we tell what the old version looked like?|B: Let us dig up the backup files first."
+      )
+      ;;
+    build)
+      lessons+=(
+        "Let us kick off the build and see what shakes out.|kick off the build / shakes out|build verification|pragmatic|Common when you run a build to surface errors before making more decisions.|A: Should we inspect every file first?|B: Let us kick off the build and see what shakes out."
+        "If the build passes, I would call this good for now.|build passes / good for now|shipping confidence|pragmatic|Useful when passing verification is enough for the current scope.|A: Do we need another pass?|B: If the build passes, this is good for now."
+      )
+      ;;
+    edit)
+      lessons+=(
+        "Let us make the smallest edit that proves the point.|smallest edit / proves the point|minimal change strategy|direct|Useful when you want to test an idea without making a broad rewrite.|A: Should I rewrite the function?|B: No. Make the smallest edit that proves the point."
+        "I would take a quick pass, then rerun it.|quick pass / rerun it|edit-and-verify loop|pragmatic|Common when you make a small edit and immediately verify the behavior.|A: What is the next move?|B: Take a quick pass, then rerun it."
+        "I really dig this old-school vi config.|dig / old-school config|casual positive reaction|casual|Uses `dig` to mean you like or appreciate something in an informal way.|A: Do you like this vi setup?|B: Yeah. I really dig this old-school config."
+      )
+      ;;
+  esac
+
+  if (( vocab_level >= 10 )); then
+    lessons+=(
+      "Let us dig in and trace it step by step.|dig in / trace it step by step|slow, methodical debugging|methodical|Useful when you want to slow down and understand the chain of events clearly.|A: Do you want to trace this out carefully?|B: Yeah, probably. I want to go step by step."
+      "That looks a little off. Let us sanity-check the assumption.|sanity-check / looks off|assumption checking|cautious|Common when something feels wrong and you want to verify the premise before changing code.|A: Should we rewrite this part?|B: Maybe, but let us sanity-check the assumption first."
+      "Could you take a quick look when you have a second?|quick look / when you have a second|polite review requests|polite|Useful when you want help without making the request sound urgent.|A: Could you take a quick look when you have a second?|B: Sure. Send it over."
+      "Let us dig in and analyze this log.|dig in / analyze this log|log investigation|methodical|Useful when a log has clues and you need to examine it carefully.|A: Is the error obvious from the log?|B: Not yet. Let us dig in and analyze it."
+      "We need to trace the execution step by step to find the bug.|trace the execution / step by step|debugging flow|methodical|Useful when the bug depends on the order of events and needs a clear trace.|A: Can we guess where it fails?|B: I would rather trace the execution step by step."
+    )
+  fi
+
+  if (( vocab_level >= 25 )); then
+    lessons+=(
+      "This feels like an edge case. Let us cover it before we move on.|edge case / cover it|defensive implementation|pragmatic|Useful when a rare condition could still break real users or future work.|A: Is that scenario worth handling?|B: Yes. It feels like an edge case we should cover."
+      "We are close. Let us clean up the rough edges.|rough edges / clean up|polish pass|direct|Common near the end of a task when behavior works but details still need tightening.|A: Is the feature done?|B: Almost. Let us clean up the rough edges."
+      "I think this is enough for a first pass.|first pass / enough for now|iteration scope|pragmatic|Useful when you want to keep progress moving without pretending the first version is final.|A: Should we perfect it today?|B: No. This is enough for a first pass."
+      "I think we are in a good groove. Let us keep the momentum going.|in a good groove / keep the momentum going|productive flow|confident|Useful when the work has rhythm and stopping too early would waste that flow.|A: Should we call it for now?|B: Maybe not yet. I think we still have momentum."
+      "I am in the zone right now. Let us keep the momentum going.|in the zone / keep the momentum going|focused work energy|confident|Common when you are focused and want to keep using that energy.|A: Do you want to pause here?|B: I am in the zone right now. Let us keep going."
+    )
+  fi
+
+  if (( vocab_level >= 50 )); then
+    lessons+=(
+      "This is probably a scope issue, not a coding issue.|scope issue / coding issue|scope control|direct|Useful when the implementation is possible but the real decision is what should be included.|A: Can we add one more feature?|B: Maybe, but this is a scope issue now."
+      "Let us unblock the small thing first, then come back to the bigger question.|unblock / come back to it|prioritization|pragmatic|Common when one small blocker is stopping progress but a larger decision can wait.|A: Should we solve the whole design now?|B: No. Let us unblock the small thing first."
+      "I would leave a note and follow up after the build passes.|leave a note / follow up|team handoff|formal|Useful when you want to capture context without interrupting the current flow.|A: Should we ask the team right now?|B: I would leave a note and follow up after the build passes."
+      "Let us wrap it up before we switch contexts.|wrap it up / switch contexts|finishing and context switching|pragmatic|Useful when you want to close the current task cleanly before moving to something else.|A: Would it help to close this out before we switch?|B: I think so. Let us wrap it up first."
+      "Let us ride this wave and finish it.|ride this wave / finish it|momentum-based finishing|casual|Useful when momentum is high and the task is close enough to finish.|A: Should we stop and come back later?|B: Not yet. Let us ride this wave and finish it."
+    )
+  fi
+
+  if (( vocab_level >= 100 )); then
+    lessons+=(
+      "I can keep up with a deeper working session now.|keep up / deeper working session|advanced collaboration|confident|Useful when a session becomes more complex but still manageable.|A: Is this getting too deep?|B: I can keep up with a deeper working session now."
+      "This is shippable, but I would still call out the tradeoff.|shippable / call out the tradeoff|release judgment|formal|Useful when the work is good enough to ship but still has a known compromise.|A: Can we ship this version?|B: Yes, but I would call out the tradeoff."
+      "Let us loop in someone who owns that part before we touch it.|loop in / owns that part|team coordination|formal|Common when another person or team owns the area you are about to change.|A: Should we edit that config ourselves?|B: I would loop in someone who owns that part first."
+      "I would rather make one thoughtful move than try a bunch of random changes.|thoughtful move / random changes|careful decision language|cautious|Good for pushing back against random experimentation in favor of one intentional step.|A: Do you want to try a bunch of small changes?|B: Not really. I think one thoughtful move is better."
+    )
+  fi
+
+  lesson_index=$(( (RANDOM % ${#lessons[@]}) + 1 ))
+  lesson="${lessons[$lesson_index]}"
+  TG_SELECTED_TALK_LINE="${lesson%%|*}"
+  lesson="${lesson#*|}"
+  TG_SELECTED_TALK_PHRASE="${lesson%%|*}"
+  lesson="${lesson#*|}"
+  TG_SELECTED_TALK_THEME="${lesson%%|*}"
+  lesson="${lesson#*|}"
+  TG_SELECTED_TALK_TONE="${lesson%%|*}"
+  lesson="${lesson#*|}"
+  TG_SELECTED_TALK_MEANING="${lesson%%|*}"
+  lesson="${lesson#*|}"
+  TG_SELECTED_TALK_EXAMPLE_A="${lesson%%|*}"
+  TG_SELECTED_TALK_EXAMPLE_B="${lesson#*|}"
+}
+
 tg_talk() {
   if ! tg_load_state; then
     return 1
   fi
 
-  local hunger health mood line
+  local hunger health mood vocab_level line last_command_name time_bucket command_category
   local -a care_lines
 
   care_lines=("${(@f)$(tg_read_care_state_lines)}")
   hunger="${care_lines[1]}"
   health="${care_lines[2]}"
   mood="${care_lines[3]}"
+  vocab_level="$(tg_get_state_value '.vocab_level' '1')"
+  last_command_name="$(tg_get_state_value '.last_command_name' '""')"
+  time_bucket="$(tg_get_time_bucket)"
+  command_category="$(tg_get_command_category "${last_command_name}")"
+  TG_SELECTED_TALK_PHRASE=""
+  TG_SELECTED_TALK_THEME=""
+  TG_SELECTED_TALK_TONE=""
+  TG_SELECTED_TALK_MEANING=""
+  TG_SELECTED_TALK_EXAMPLE_A=""
+  TG_SELECTED_TALK_EXAMPLE_B=""
 
   if (( hunger < 30 )); then
     line="Can we grab a snack soon?"
@@ -502,10 +683,20 @@ tg_talk() {
   elif (( mood < 30 )); then
     line="Talk to me. I need a small boost."
   else
-    line="Let's keep going. I'm learning from your work."
+    tg_pick_vocab_talk_line "${vocab_level}" "${time_bucket}" "${command_category}"
+    line="${TG_SELECTED_TALK_LINE}"
   fi
 
   printf '%s\n' "${line}"
+  if [[ -n "${TG_SELECTED_TALK_PHRASE}" ]]; then
+    printf 'Phrase: %s\n' "${TG_SELECTED_TALK_PHRASE}"
+    printf 'Theme: %s\n' "${TG_SELECTED_TALK_THEME}"
+    printf 'Tone: %s\n' "${TG_SELECTED_TALK_TONE}"
+    printf 'Meaning: %s\n' "${TG_SELECTED_TALK_MEANING}"
+    printf 'Example:\n'
+    printf '%s\n' "${TG_SELECTED_TALK_EXAMPLE_A}"
+    printf '%s\n' "${TG_SELECTED_TALK_EXAMPLE_B}"
+  fi
 }
 
 tg_train() {
@@ -557,13 +748,13 @@ tg_register_hooks() {
 tg_help() {
   cat <<'EOF'
 Term-gotchi commands:
-  tg_status  今の姿、レベル、XP、気分、最近のメッセージを表示します。
-  tg_feed    ごはんをあげます。hunger と mood が少し上がります。
-  tg_clean   きれいにします。health と mood が少し上がります。
-  tg_talk    話しかけます。今の状態に応じた短いメッセージを表示します。
-  tg_train   いっしょに練習します。XP と vocab が上がり、成長のきっかけになります。
-  tg_version runtime version と state version を表示します。
-  tg_help    このヘルプを表示します。
+  tg_status  Show current form, level, XP, mood, and recent message.
+  tg_feed    Feed Term-gotchi. Hunger and mood go up a little.
+  tg_clean   Clean up. Health and mood go up a little.
+  tg_talk    Start a short workplace-English micro lesson.
+  tg_train   Practice together. XP and vocab go up.
+  tg_version Show runtime version and state schema version.
+  tg_help    Show this help.
 EOF
 }
 
