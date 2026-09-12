@@ -16,7 +16,7 @@ typeset -g TG_SELECTED_TALK_TONE=""
 typeset -g TG_SELECTED_TALK_MEANING=""
 typeset -g TG_SELECTED_TALK_EXAMPLE_A=""
 typeset -g TG_SELECTED_TALK_EXAMPLE_B=""
-if [[ "${(t)TG_RUNTIME_VERSION}" != *readonly* ]]; then
+if [[ "${(t)TG_RUNTIME_VERSION-}" != *readonly* ]]; then
   typeset -g TG_RUNTIME_VERSION="0.1.1"
 fi
 
@@ -80,6 +80,19 @@ tg_load_state() {
   fi
 
   return 0
+}
+
+tg_validate_state_file() {
+  local state_file="$1"
+
+  jq -e '
+    type == "object"
+    and (.version | type == "number")
+    and (.level | type == "number")
+    and (.xp | type == "number")
+    and (.xp_to_next | type == "number")
+    and (.unique_commands | type == "array")
+  ' "${state_file}" >/dev/null 2>&1
 }
 
 tg_get_state_value() {
@@ -456,6 +469,103 @@ tg_status() {
   fi
 }
 
+tg_export() {
+  if ! tg_load_state; then
+    return 1
+  fi
+
+  local export_target="${1:-}"
+  local now
+
+  now="$(date '+%Y%m%d-%H%M%S')"
+  if [[ -z "${export_target}" ]]; then
+    export_target="termgotchi-state.${now}.json"
+  elif [[ -d "${export_target}" ]]; then
+    export_target="${export_target}/termgotchi-state.${now}.json"
+  fi
+
+  if ! cp "${TG_STATE_FILE}" "${export_target}"; then
+    tg_print_runtime_error "failed to export state to ${export_target}"
+    return 1
+  fi
+
+  printf 'Exported Term-gotchi state to %s\n' "${export_target}"
+}
+
+tg_import() {
+  local import_source="${1:-}"
+  local backup_file temp_file now
+
+  if [[ -z "${import_source}" ]]; then
+    tg_print_runtime_error "usage: tg_import <state.json>"
+    return 1
+  fi
+
+  if [[ ! -f "${import_source}" ]]; then
+    tg_print_runtime_error "import file not found: ${import_source}"
+    return 1
+  fi
+
+  if ! tg_require_dependencies; then
+    tg_print_runtime_error "jq is required. Re-run install after installing jq."
+    return 1
+  fi
+
+  if ! tg_validate_state_file "${import_source}"; then
+    tg_print_runtime_error "import file is not a valid Term-gotchi state: ${import_source}"
+    return 1
+  fi
+
+  if [[ "${import_source:A}" == "${TG_STATE_FILE:A}" ]]; then
+    printf 'Import source is already the active Term-gotchi state.\n'
+    return 0
+  fi
+
+  mkdir -p "${TG_HOME}/backup" || {
+    tg_print_runtime_error "failed to create backup directory"
+    return 1
+  }
+
+  now="$(date '+%Y%m%d-%H%M%S')"
+  if [[ -f "${TG_STATE_FILE}" ]]; then
+    backup_file="${TG_HOME}/backup/state.before-import.${now}.json"
+    if ! cp "${TG_STATE_FILE}" "${backup_file}"; then
+      tg_print_runtime_error "failed to back up current state"
+      return 1
+    fi
+  fi
+
+  temp_file="$(mktemp "${TG_HOME}/state.json.import.XXXXXX")" || {
+    tg_print_runtime_error "failed to create import temp file"
+    return 1
+  }
+
+  if ! cp "${import_source}" "${temp_file}"; then
+    rm -f "${temp_file}"
+    tg_print_runtime_error "failed to copy import file"
+    return 1
+  fi
+
+  if ! tg_validate_state_file "${temp_file}"; then
+    rm -f "${temp_file}"
+    tg_print_runtime_error "copied import file is invalid"
+    return 1
+  fi
+
+  if ! mv "${temp_file}" "${TG_STATE_FILE}"; then
+    rm -f "${temp_file}"
+    tg_print_runtime_error "failed to replace state file"
+    return 1
+  fi
+
+  if [[ -n "${backup_file:-}" ]]; then
+    printf 'Imported Term-gotchi state from %s\n' "${import_source}"
+    printf 'Previous state backed up to %s\n' "${backup_file}"
+  else
+    printf 'Imported Term-gotchi state from %s\n' "${import_source}"
+  fi
+}
+
 tg_feed() {
   local hunger next_hunger next_mood
   local -a care_lines updated_values
@@ -753,6 +863,8 @@ Term-gotchi commands:
   tg_clean   Clean up. Health and mood go up a little.
   tg_talk    Start a short workplace-English micro lesson.
   tg_train   Practice together. XP and vocab go up.
+  tg_export  Export state JSON for manual backup or transfer.
+  tg_import  Import state JSON after validation and backup.
   tg_version Show runtime version and state schema version.
   tg_help    Show this help.
 EOF

@@ -78,9 +78,20 @@ tg_status
 If you want the same companion state on the new machine:
 
 1. Install Term-gotchi on the target machine first.
-2. Copy the old machine's `~/.termgotchi/state.json` to the new machine's `~/.termgotchi/state.json`.
-3. If you want matching art files too, copy `~/.termgotchi/art/` as well.
-4. Open a new shell and run:
+2. On the old machine, export the state:
+
+```sh
+tg_export ~/Desktop/termgotchi-state.json
+```
+
+3. Move that exported file to the target machine.
+4. On the target machine, import it:
+
+```sh
+tg_import ~/Desktop/termgotchi-state.json
+```
+
+5. Open a new shell and run:
 
 ```sh
 tg_status
@@ -89,7 +100,8 @@ tg_status
 Recommended order:
 
 - run `zsh ./install.zsh` first
-- replace only `state.json` after install
+- import only `state.json` after install
+- do not copy `termgotchi.zsh` from another machine into place
 
 This keeps the runtime files on the new machine aligned with the current repository version.
 
@@ -99,6 +111,7 @@ This keeps the runtime files on the new machine aligned with the current reposit
 - confirm `jq` exists on the target machine
 - install from the repository before copying old state
 - verify `~/.zshrc` contains only one Term-gotchi source line
+- use `tg_export` / `tg_import` for state transfer
 - run `tg_status`
 - run `tg_feed`
 - run `tg_train`
@@ -150,6 +163,7 @@ When moving between machines:
 - keep the repository contents the same on both sides when possible
 - avoid mixing an old `state.json` with heavily changed runtime code unless you test `tg_status` immediately after migration
 - if migration behaves oddly, back up `state.json`, reinstall, and retry with the backup copy
+- `tg_import` does not merge two independently changed states; choose one exported file deliberately
 
 ## Troubleshooting
 

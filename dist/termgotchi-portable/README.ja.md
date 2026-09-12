@@ -1,5 +1,10 @@
 # Term-gotchi
 
+[![CI](https://github.com/k1117n-cmyk/termgotchi/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/k1117n-cmyk/termgotchi/actions/workflows/ci.yml)
+![Shell](https://img.shields.io/badge/shell-zsh-89e051)
+![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux-lightgrey)
+![Language](https://img.shields.io/badge/language-Shell-89e051)
+
 Term-gotchi は `zsh` 向けのターミナルコンパニオンです。  
 普段のコマンドライン作業を、英語学習の雰囲気を持った軽い育成ゲームに変えます。
 
@@ -53,6 +58,20 @@ Release パッケージを使う場合:
 - インストーラが壊れた `state.json` を見つけた場合は、`~/.termgotchi/backup/` に退避して再生成する
 - インストーラの終了コード `24` は、無効な state ファイルを退避したうえで復旧に成功したことを意味する
 - `tg_status` は、現在の状態要約より直近イベントの方が有益な場合に `Recent:` 行を表示することがある
+- `tg_import` は取り込み前に JSON を検証し、既存 state を `~/.termgotchi/backup/` に退避する
+
+## 手動バックアップと移行
+
+Term-gotchi はクラウド同期を自動では行いません。  
+別の Mac / PC に状態を移したい場合は、`state.json` だけを明示的に書き出して取り込みます。
+
+```sh
+tg_export ~/Desktop/termgotchi-state.json
+tg_import ~/Desktop/termgotchi-state.json
+```
+
+`tg_export` は引数なしの場合、カレントディレクトリに `termgotchi-state.<timestamp>.json` を作成します。  
+`tg_import` は指定ファイルを検証してから現在の state をバックアップし、取り込みます。
 
 ## 予定している MVP
 
@@ -60,6 +79,7 @@ Release パッケージを使う場合:
 - `termgotchi.zsh` を `.zshrc` から読み込む
 - `tg_status` が現在状態と ASCII アートを表示する
 - `tg_feed`、`tg_clean`、`tg_talk`、`tg_train` で直接インタラクションできる
+- `tg_export`、`tg_import` で state を手動バックアップ・移行できる
 - 通常コマンドが `preexec` / `precmd` 経由で XP を与える
 - レベルアップとコマンド種類に応じた進化:
   - `egg -> sprout`
