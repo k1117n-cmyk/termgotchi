@@ -64,6 +64,20 @@ From a release package:
 - If the installer finds a broken `state.json`, it backs it up into `~/.termgotchi/backup/` and recreates it.
 - Installer exit code `24` means recovery succeeded after backing up an invalid state file.
 - `tg_status` can show a `Recent:` line when the last event message is more informative than the current state summary.
+- `tg_import` validates the imported JSON and backs up the current state under `~/.termgotchi/backup/` before replacing it.
+
+## Manual Backup And Migration
+
+Term-gotchi does not perform automatic cloud sync.
+To move the same companion state to another Mac or PC, explicitly export and import only `state.json`.
+
+```sh
+tg_export ~/Desktop/termgotchi-state.json
+tg_import ~/Desktop/termgotchi-state.json
+```
+
+Without an argument, `tg_export` writes `termgotchi-state.<timestamp>.json` in the current directory.
+`tg_import` validates the selected file, backs up the current state, and then imports it.
 
 ## Planned MVP
 
@@ -71,6 +85,7 @@ From a release package:
 - `termgotchi.zsh` is sourced from `.zshrc`
 - `tg_status` shows current state and ASCII art
 - `tg_feed`, `tg_clean`, `tg_talk`, `tg_train` provide direct interaction
+- `tg_export`, `tg_import` support manual state backup and migration
 - normal commands grant XP via `preexec` / `precmd`
 - level-up and command-variety evolution:
   - `egg -> sprout`

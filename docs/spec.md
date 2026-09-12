@@ -37,6 +37,8 @@ The MVP focuses on companion growth, not strict language enforcement.
 - `tg_clean`
 - `tg_talk`
 - `tg_train`
+- `tg_export`
+- `tg_import`
 - `tg_help`
 
 ### Optional Later Shortcut Commands
@@ -176,6 +178,21 @@ xp_to_next = 20 + (level - 1) * 10
 - `vocab_level +1`
 - `vocab_level` is also kept at least as high as `unique_commands.length`
 - may trigger level-up / evolution
+
+### `tg_export`
+
+- copies the active `state.json` to a user-selected path
+- with no argument, writes `termgotchi-state.<timestamp>.json` in the current directory
+- if the argument is a directory, writes the timestamped export file inside it
+- does not export runtime code or art assets
+
+### `tg_import`
+
+- requires a user-selected state file path
+- validates that the input is a JSON object with required state fields
+- backs up the current `state.json` under `~/.termgotchi/backup/`
+- replaces the active state only after validation succeeds
+- does not merge two independently changed states
 
 ## Idle Decay
 

@@ -58,6 +58,7 @@ termgotchi/
 - source guard
 - helper functions
 - state load/save
+- manual state export/import
 - user commands
 - shell hook registration
 
@@ -80,6 +81,8 @@ Do not overwrite raw `preexec()` / `precmd()` functions directly.
 - state is updated through temp file + `mv`
 - no destructive resets without explicit request
 - broken state should be backed up before replacement
+- imported state should be validated before replacement
+- manual export/import only moves `state.json`, not sourced runtime code
 
 ## Uninstall Model
 
