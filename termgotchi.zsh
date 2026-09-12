@@ -492,13 +492,52 @@ tg_export() {
   printf 'Exported Term-gotchi state to %s\n' "${export_target}"
 }
 
+tg_find_import_candidates() {
+  local -a search_dirs candidates
+  local dir file
+
+  search_dirs=("." "${HOME}/Desktop" "${HOME}/Downloads")
+  candidates=()
+
+  for dir in "${search_dirs[@]}"; do
+    [[ -d "${dir}" ]] || continue
+
+    for file in "${dir}"/termgotchi-state*.json(N.); do
+      [[ "${file:A}" == "${TG_STATE_FILE:A}" ]] && continue
+      candidates+=("${file:A}")
+    done
+
+    for file in "${dir}"/state.json(N.); do
+      [[ "${file:A}" == "${TG_STATE_FILE:A}" ]] && continue
+      candidates+=("${file:A}")
+    done
+  done
+
+  printf '%s\n' "${candidates[@]}" | awk '!seen[$0]++'
+}
+
 tg_import() {
   local import_source="${1:-}"
   local backup_file temp_file now
+  local -a import_candidates
 
   if [[ -z "${import_source}" ]]; then
-    tg_print_runtime_error "usage: tg_import <state.json>"
-    return 1
+    import_candidates=("${(@f)$(tg_find_import_candidates)}")
+
+    if (( ${#import_candidates[@]} == 0 )); then
+      tg_print_runtime_error "no import file found. Export one first with: tg_export"
+      tg_print_runtime_error "or import explicitly with: tg_import <state.json>"
+      return 1
+    fi
+
+    if (( ${#import_candidates[@]} > 1 )); then
+      tg_print_runtime_error "multiple import files found. Choose one:"
+      printf '  tg_import %q\n' "${import_candidates[@]}" >&2
+      return 1
+    fi
+
+    import_source="${import_candidates[1]}"
+    printf 'Using import file: %s\n' "${import_source}"
   fi
 
   if [[ ! -f "${import_source}" ]]; then
@@ -864,7 +903,7 @@ Term-gotchi commands:
   tg_talk    Start a short workplace-English micro lesson.
   tg_train   Practice together. XP and vocab go up.
   tg_export  Export state JSON for manual backup or transfer.
-  tg_import  Import state JSON after validation and backup.
+  tg_import  Import state JSON after validation and backup. With no argument, auto-detect one nearby export.
   tg_version Show runtime version and state schema version.
   tg_help    Show this help.
 EOF

@@ -71,7 +71,7 @@ tg_import ~/Desktop/termgotchi-state.json
 ```
 
 `tg_export` は引数なしの場合、カレントディレクトリに `termgotchi-state.<timestamp>.json` を作成します。  
-`tg_import` は指定ファイルを検証してから現在の state をバックアップし、取り込みます。
+`tg_import` は指定ファイルを検証してから現在の state をバックアップし、取り込みます。引数なしの場合は、カレントディレクトリ、`~/Desktop`、`~/Downloads` から候補を探し、1件だけ見つかればそのファイルを取り込みます。
 
 ## 予定している MVP
 

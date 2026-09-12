@@ -91,6 +91,12 @@ tg_export ~/Desktop/termgotchi-state.json
 tg_import ~/Desktop/termgotchi-state.json
 ```
 
+If the target machine has exactly one `termgotchi-state*.json` or `state.json` candidate in the current directory, `~/Desktop`, or `~/Downloads`, you can also run:
+
+```sh
+tg_import
+```
+
 5. Open a new shell and run:
 
 ```sh
@@ -163,6 +169,7 @@ When moving between machines:
 - keep the repository contents the same on both sides when possible
 - avoid mixing an old `state.json` with heavily changed runtime code unless you test `tg_status` immediately after migration
 - if migration behaves oddly, back up `state.json`, reinstall, and retry with the backup copy
+- `tg_import` without an argument imports only when one clear candidate file is found
 - `tg_import` does not merge two independently changed states; choose one exported file deliberately
 
 ## Troubleshooting

@@ -78,6 +78,7 @@ tg_import ~/Desktop/termgotchi-state.json
 
 Without an argument, `tg_export` writes `termgotchi-state.<timestamp>.json` in the current directory.
 `tg_import` validates the selected file, backs up the current state, and then imports it.
+Without an argument, `tg_import` searches the current directory, `~/Desktop`, and `~/Downloads`; if exactly one candidate is found, it imports that file.
 
 ## Planned MVP
 

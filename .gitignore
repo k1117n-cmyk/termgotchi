@@ -7,4 +7,5 @@ dist/*.checksums.txt
 input.png
 output.png
 output.pmg
+termgotchi-state*.json
 docs/promotion-plan.md
