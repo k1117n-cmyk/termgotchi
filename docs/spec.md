@@ -33,10 +33,13 @@ The MVP focuses on companion growth, not strict language enforcement.
 ### Required MVP Commands
 
 - `tg_status`
+- `tg_history`
 - `tg_feed`
 - `tg_clean`
 - `tg_talk`
 - `tg_train`
+- `tg_study`
+- `tg_build`
 - `tg_export`
 - `tg_import`
 - `tg_help`
@@ -77,6 +80,7 @@ Persistent state lives in:
   "unique_commands": [],
   "streak_days": 0,
   "vocab_level": 1,
+  "recent_events": [],
   "last_command_name": "",
   "last_status_message": "I'm feeling productive!",
   "created_at": "2026-04-25T10:00:00+09:00",
@@ -108,6 +112,7 @@ Persistent state lives in:
 - `command_count`
 - `unique_commands`
 - `vocab_level`
+- `recent_events`
 
 ## Growth Rules
 
@@ -174,10 +179,26 @@ xp_to_next = 20 + (level - 1) * 10
 
 ### `tg_train`
 
-- `xp +3`
-- `vocab_level +1`
+- base form: `xp +3`, `vocab_level +1`
+- later forms can grant larger training rewards
 - `vocab_level` is also kept at least as high as `unique_commands.length`
 - may trigger level-up / evolution
+
+### `tg_history`
+
+- reads `.recent_events` from `state.json`
+- displays up to 12 recent growth events
+- falls back cleanly when older state files have no `recent_events`
+
+### `tg_study`
+
+- available only in `sage` form
+- grants larger vocabulary-focused progress
+
+### `tg_build`
+
+- available only in `builder` form
+- grants larger work-focused progress
 
 ### `tg_export`
 

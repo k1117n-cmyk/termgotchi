@@ -25,7 +25,7 @@ Term-gotchi は `zsh` 向けのターミナルコンパニオンです。
 ## 現在の状態
 
 初期実装はすでに始まっています。  
-安全なインストーラ、ランタイムローダー、初期 state、`tg_status`、お世話コマンド、`tg_train`、放置による減衰、通常コマンドからの受動 XP フックが入っています。
+安全なインストーラ、ランタイムローダー、初期 state、`tg_status`、`tg_history`、お世話コマンド、最終形専用コマンド、放置による減衰、手動 state 移行、通常コマンドからの受動 XP フックが入っています。
 
 ## インストール
 
@@ -58,6 +58,7 @@ Release パッケージを使う場合:
 - インストーラが壊れた `state.json` を見つけた場合は、`~/.termgotchi/backup/` に退避して再生成する
 - インストーラの終了コード `24` は、無効な state ファイルを退避したうえで復旧に成功したことを意味する
 - `tg_status` は、現在の状態要約より直近イベントの方が有益な場合に `Recent:` 行を表示することがある
+- `tg_history` は、`state.json` 内のローカルな `recent_events` 成長ログを読み出す
 - `tg_import` は取り込み前に JSON を検証し、既存 state を `~/.termgotchi/backup/` に退避する
 
 ## 手動バックアップと移行
@@ -78,7 +79,8 @@ tg_import ~/Desktop/termgotchi-state.json
 - `install.zsh` が `~/.termgotchi/` に必要ファイルを配置する
 - `termgotchi.zsh` を `.zshrc` から読み込む
 - `tg_status` が現在状態と ASCII アートを表示する
-- `tg_feed`、`tg_clean`、`tg_talk`、`tg_train` で直接インタラクションできる
+- `tg_history` が最近の成長イベントを表示する
+- `tg_feed`、`tg_clean`、`tg_talk`、`tg_train`、`tg_study`、`tg_build` で直接インタラクションできる
 - `tg_export`、`tg_import` で state を手動バックアップ・移行できる
 - 通常コマンドが `preexec` / `precmd` 経由で XP を与える
 - レベルアップとコマンド種類に応じた進化:

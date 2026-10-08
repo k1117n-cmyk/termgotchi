@@ -17,7 +17,7 @@ typeset -g TG_SELECTED_TALK_MEANING=""
 typeset -g TG_SELECTED_TALK_EXAMPLE_A=""
 typeset -g TG_SELECTED_TALK_EXAMPLE_B=""
 if [[ "${(t)TG_RUNTIME_VERSION-}" != *readonly* ]]; then
-  typeset -g TG_RUNTIME_VERSION="0.1.1"
+  typeset -g TG_RUNTIME_VERSION="0.2.1"
 fi
 
 tg_now() {
@@ -114,6 +114,7 @@ tg_read_status_lines() {
       ((.health // 80) | tostring),
       ((.mood // 80) | tostring),
       ((.command_count // 0) | tostring),
+      (((.unique_commands // []) | length) | tostring),
       ((.vocab_level // 1) | tostring),
       (.last_status_message // "")
     ] | .[]
@@ -127,6 +128,15 @@ tg_read_care_state_lines() {
       ((.health // 80) | tostring),
       ((.mood // 80) | tostring)
     ] | .[]
+  ' "${TG_STATE_FILE}"
+}
+
+tg_read_recent_events() {
+  jq -r '
+    (.recent_events // [])
+    | .[]
+    | select((.text // "") != "")
+    | "\(.at // "")\t\(.text // "")"
   ' "${TG_STATE_FILE}"
 }
 
@@ -160,6 +170,159 @@ tg_save_state_with_filter() {
   return 0
 }
 
+tg_append_event_filter() {
+  local event_text="$1"
+  local event_time="$2"
+
+  cat <<EOF
+| .recent_events = (
+    ([{
+      at: "${event_time}",
+      text: "${event_text}"
+    }] + (.recent_events // []))[:12]
+  )
+EOF
+}
+
+tg_repeat_char() {
+  local count="$1"
+  local char="$2"
+  local output=""
+  local i
+
+  for (( i = 0; i < count; i++ )); do
+    output+="${char}"
+  done
+
+  printf '%s' "${output}"
+}
+
+tg_render_meter() {
+  local value="$1"
+  local max_value="$2"
+  local width="${3:-10}"
+  local filled empty
+
+  if (( max_value <= 0 )); then
+    max_value=1
+  fi
+
+  filled=$(( (value * width + max_value - 1) / max_value ))
+  filled="$(tg_clamp "${filled}" 0 "${width}")"
+  empty=$(( width - filled ))
+
+  printf '[%s%s]' "$(tg_repeat_char "${filled}" '#')" "$(tg_repeat_char "${empty}" '.')"
+}
+
+tg_next_form_goal() {
+  local form="$1"
+  local level="$2"
+  local unique_count="$3"
+  local levels_needed unique_needed
+
+  case "${form}" in
+    egg)
+      printf 'Next form: sprout at level 2'
+      ;;
+    sprout)
+      levels_needed=$(( 3 - level ))
+      unique_needed=$(( 10 - unique_count ))
+      (( levels_needed < 0 )) && levels_needed=0
+      (( unique_needed < 0 )) && unique_needed=0
+      printf 'Next form: buddy in %s level, %s unique command' "${levels_needed}" "${unique_needed}"
+      (( unique_needed != 1 )) && printf 's'
+      ;;
+    buddy)
+      printf 'Next forms: builder at level 10 / 50 unique commands, sage at level 20 / 100 unique commands'
+      ;;
+    *)
+      printf 'Final form reached'
+      ;;
+  esac
+}
+
+tg_get_form_trait() {
+  local form="${1:-egg}"
+
+  case "${form}" in
+    egg)
+      printf 'Trait: curious but fragile'
+      ;;
+    sprout)
+      printf 'Trait: picking up momentum'
+      ;;
+    buddy)
+      printf 'Trait: reliable work partner'
+      ;;
+    sage)
+      printf 'Trait: language-focused mentor'
+      ;;
+    builder)
+      printf 'Trait: tough hands-on finisher'
+      ;;
+    *)
+      printf 'Trait: unknown'
+      ;;
+  esac
+}
+
+tg_get_training_bonus() {
+  local form="${1:-egg}"
+
+  case "${form}" in
+    sprout)
+      printf '%s\n' '4' '1'
+      ;;
+    buddy)
+      printf '%s\n' '5' '2'
+      ;;
+    sage)
+      printf '%s\n' '6' '3'
+      ;;
+    builder)
+      printf '%s\n' '6' '2'
+      ;;
+    *)
+      printf '%s\n' '3' '1'
+      ;;
+  esac
+}
+
+tg_get_training_status_message() {
+  local form="${1:-egg}"
+
+  case "${form}" in
+    sprout)
+      printf 'I can feel new skills taking root.'
+      ;;
+    buddy)
+      printf 'We make a strong team now.'
+      ;;
+    sage)
+      printf 'That lesson clicked. I can explain it back now.'
+      ;;
+    builder)
+      printf 'Solid repetition. I can execute that faster now.'
+      ;;
+    *)
+      printf 'That was a good practice session!'
+      ;;
+  esac
+}
+
+tg_require_form() {
+  local required_form="$1"
+  local current_form="$2"
+  local command_name="$3"
+
+  if [[ "${current_form}" != "${required_form}" ]]; then
+    tg_print_runtime_error "${command_name} is available only in ${required_form} form. Current form: ${current_form}"
+    return 1
+  fi
+
+  return 0
+}
+
 tg_apply_progress() {
   local earned_xp="$1"
   local vocab_gain="$2"
@@ -178,6 +341,7 @@ tg_apply_progress() {
   local filter
   filter=$(cat <<EOF
 . as \$state
+| (\$state.form // "egg") as \$previous_form
 | (\$state.unique_commands // []) as \$unique_commands
 | (\$unique_commands | index("${command_name}")) as \$existing_index
 | (if "${count_command}" == "1" then ((\$state.command_count // 0) + 1) else (\$state.command_count // 0) end) as \$next_command_count
@@ -207,7 +371,24 @@ tg_apply_progress() {
 | .last_command_name = "${command_name}"
 | .last_active_at = "${now}"
 | .updated_at = "${now}"
-| .last_status_message = "${status_message}"
+| .last_status_message = (
+    if \$previous_form != .form then
+      if .form == "sprout" then "A sprout pushed through. Growth has begun."
+      elif .form == "buddy" then "I grew into your buddy. Let us keep building together."
+      elif .form == "sage" then "I became a sage. Let us turn practice into understanding."
+      elif .form == "builder" then "I became a builder. Put me on real work."
+      else "${status_message}"
+      end
+    else
+      "${status_message}"
+    end
+  )
+| .recent_events = (
+    ([{
+      at: "${now}",
+      text: (if \$previous_form != .form then "evolution: " + .last_status_message else "${command_name}: ${status_message}" end)
+    }] + (.recent_events // []))[:12]
+  )
 EOF
 )
 
@@ -270,6 +451,7 @@ tg_apply_idle_decay() {
     | .last_decay_at = \"${now}\"
     | .updated_at = \"${now}\"
     | .last_status_message = \"${status_message}\"
+    $(tg_append_event_filter "idle: ${status_message}" "${now}")
   "
 }
 
@@ -306,6 +488,7 @@ tg_apply_care_update() {
     | .last_active_at = \"${now}\"
     | .updated_at = \"${now}\"
     | .last_status_message = \"${status_message}\"
+    $(tg_append_event_filter "${timestamp_field}: ${status_message}" "${now}")
   " || return 1
 
   printf '%s\n' "${next_hunger}" "${next_health}" "${next_mood}"
@@ -330,7 +513,7 @@ tg_command_is_internal() {
   [[ -z "${command_name}" ]] && return 0
 
   case "${command_name}" in
-    tg_*|termgotchi_internal_*|source|.|alias|unalias|autoload|bindkey|eval|fc|functions|hash|history|rehash|set|setopt|typeset|unset|unsetopt|export|readonly|integer|float)
+    tg_*|termgotchi_internal_*|source|.|alias|unalias|autoload|bindkey|eval|fc|functions|hash|history|rehash|set|setopt|typeset|unset|unsetopt|export|readonly|integer|float|whence|type|which)
       return 0
       ;;
     *)
@@ -435,7 +618,7 @@ tg_status() {
     return 1
   fi
 
-  local name form level xp xp_to_next hunger health mood command_count vocab_level last_status_message display_message
+  local name form level xp xp_to_next hunger health mood command_count unique_count vocab_level last_status_message display_message
   local -a state_lines
 
   state_lines=("${(@f)$(tg_read_status_lines)}")
@@ -448,8 +631,9 @@ tg_status() {
   health="${state_lines[7]}"
   mood="${state_lines[8]}"
   command_count="${state_lines[9]}"
-  vocab_level="${state_lines[10]}"
-  last_status_message="${state_lines[11]}"
+  unique_count="${state_lines[10]}"
+  vocab_level="${state_lines[11]}"
+  last_status_message="${state_lines[12]}"
   display_message="$(tg_get_status_message "${hunger}" "${health}" "${mood}")"
 
   tg_render_ascii "${form}"
@@ -457,16 +641,41 @@ tg_status() {
   printf '%s\n' "${name}"
   printf 'Form: %s\n' "${form}"
   printf 'Level: %s\n' "${level}"
-  printf 'XP: %s/%s\n' "${xp}" "${xp_to_next}"
-  printf 'Hunger: %s\n' "${hunger}"
-  printf 'Health: %s\n' "${health}"
-  printf 'Mood: %s\n' "${mood}"
-  printf 'Commands: %s\n' "${command_count}"
+  printf 'XP: %s/%s %s\n' "${xp}" "${xp_to_next}" "$(tg_render_meter "${xp}" "${xp_to_next}")"
+  printf 'Hunger: %s %s\n' "${hunger}" "$(tg_render_meter "${hunger}" 100)"
+  printf 'Health: %s %s\n' "${health}" "$(tg_render_meter "${health}" 100)"
+  printf 'Mood: %s %s\n' "${mood}" "$(tg_render_meter "${mood}" 100)"
+  printf 'Commands: %s total / %s unique\n' "${command_count}" "${unique_count}"
   printf 'Vocab: %s\n' "${vocab_level}"
+  printf '%s\n' "$(tg_get_form_trait "${form}")"
+  printf '%s\n' "$(tg_next_form_goal "${form}" "${level}" "${unique_count}")"
   printf 'Message: %s\n' "${display_message}"
   if tg_should_show_recent_message "${last_status_message}" "${display_message}"; then
     printf 'Recent: %s\n' "${last_status_message}"
   fi
+}
+
+tg_history() {
+  local line timestamp text
+  local -a event_lines
+
+  if ! tg_load_state; then
+    return 1
+  fi
+
+  event_lines=("${(@f)$(tg_read_recent_events)}")
+
+  if (( ${#event_lines[@]} == 0 )) || (( ${#event_lines[@]} == 1 && ${#event_lines[1]} == 0 )); then
+    printf 'No recent growth events yet.\n'
+    return 0
+  fi
+
+  printf 'Recent growth log:\n'
+  for line in "${event_lines[@]}"; do
+    timestamp="${line%%$'\t'*}"
+    text="${line#*$'\t'}"
+    printf '  %s  %s\n' "${timestamp}" "${text}"
+  done
 }
 
 tg_export() {
@@ -849,9 +1058,40 @@ tg_talk() {
 }
 
 tg_train() {
+  local form earned_xp vocab_gain status_message
+  local -a training_bonus
+
   tg_apply_idle_decay || return 1
-  tg_apply_progress 3 1 "tg_train" "That was a good practice session!" 0 "last_trained_at" || return 1
-  printf "You trained Term-gotchi. XP +3, Vocab +1\n"
+  form="$(tg_get_state_value '.form' '"egg"')"
+  training_bonus=("${(@f)$(tg_get_training_bonus "${form}")}")
+  earned_xp="${training_bonus[1]}"
+  vocab_gain="${training_bonus[2]}"
+  status_message="$(tg_get_training_status_message "${form}")"
+
+  tg_apply_progress "${earned_xp}" "${vocab_gain}" "tg_train" "${status_message}" 0 "last_trained_at" || return 1
+  printf "You trained Term-gotchi. XP +%s, Vocab +%s\n" "${earned_xp}" "${vocab_gain}"
+}
+
+tg_study() {
+  local form
+
+  tg_apply_idle_decay || return 1
+  form="$(tg_get_state_value '.form' '"egg"')"
+  tg_require_form "sage" "${form}" "tg_study" || return 1
+
+  tg_apply_progress 4 4 "tg_study" "We unpacked a tricky idea and made it stick." 0 || return 1
+  printf "You studied with Term-gotchi. XP +4, Vocab +4\n"
+}
+
+tg_build() {
+  local form
+
+  tg_apply_idle_decay || return 1
+  form="$(tg_get_state_value '.form' '"egg"')"
+  tg_require_form "builder" "${form}" "tg_build" || return 1
+
+  tg_apply_progress 8 1 "tg_build" "We shipped a solid piece of work together." 0 || return 1
+  printf "You built with Term-gotchi. XP +8, Vocab +1\n"
 }
 
 tg_on_command_start() {
@@ -898,10 +1138,13 @@ tg_help() {
   cat <<'EOF'
 Term-gotchi commands:
   tg_status  Show current form, level, XP, mood, and recent message.
+  tg_history Show recent growth events.
   tg_feed    Feed Term-gotchi. Hunger and mood go up a little.
   tg_clean   Clean up. Health and mood go up a little.
   tg_talk    Start a short workplace-English micro lesson.
   tg_train   Practice together. XP and vocab go up.
+  tg_study   Sage-only deep study. XP and vocab go up more.
+  tg_build   Builder-only focused build session. XP goes up more.
   tg_export  Export state JSON for manual backup or transfer.
   tg_import  Import state JSON after validation and backup. With no argument, auto-detect one nearby export.
   tg_version Show runtime version and state schema version.

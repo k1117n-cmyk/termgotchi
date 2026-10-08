@@ -60,6 +60,7 @@ tg_init_state() {
   "unique_commands": [],
   "streak_days": 0,
   "vocab_level": 1,
+  "recent_events": [],
   "last_command_name": "",
   "last_status_message": "I'm feeling productive!",
   "created_at": "${now}",
