@@ -4,7 +4,7 @@ Term-gotchi release notes.
 
 This file summarizes user-facing changes without requiring readers to inspect every commit.
 
-## 0.2.1 - 2026-10-08
+## 0.8.1 - 2026-10-08
 
 - Restored `tg_history` and persistent `recent_events` growth logs.
 - Restored detailed `tg_status` output with meters, unique command counts, form traits, and next-form hints.
@@ -12,6 +12,7 @@ This file summarizes user-facing changes without requiring readers to inspect ev
 - Restored growth-event messages for care actions, training, idle decay, and evolution.
 - Excluded shell inspection commands such as `whence`, `type`, and `which` from passive growth.
 - Added `recent_events` to newly initialized state files.
+- Restored the runtime version line to follow the earlier `v0.8.0` development history.
 
 ## 0.2.0 - 2026-08-04
 

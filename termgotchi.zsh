@@ -17,7 +17,7 @@ typeset -g TG_SELECTED_TALK_MEANING=""
 typeset -g TG_SELECTED_TALK_EXAMPLE_A=""
 typeset -g TG_SELECTED_TALK_EXAMPLE_B=""
 if [[ "${(t)TG_RUNTIME_VERSION-}" != *readonly* ]]; then
-  typeset -g TG_RUNTIME_VERSION="0.2.1"
+  typeset -g TG_RUNTIME_VERSION="0.8.1"
 fi
 
 tg_now() {
