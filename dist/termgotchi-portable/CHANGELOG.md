@@ -4,6 +4,10 @@ Term-gotchi release notes.
 
 This file summarizes user-facing changes without requiring readers to inspect every commit.
 
+## Unreleased
+
+- Kept `tg_talk` care-state responses at full lesson depth, including Phrase, Theme, Tone, Meaning, and Example fields.
+
 ## 0.8.1 - 2026-10-08
 
 - Restored `tg_history` and persistent `recent_events` growth logs.

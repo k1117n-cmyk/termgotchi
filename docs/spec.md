@@ -159,9 +159,9 @@ xp_to_next = 20 + (level - 1) * 10
 
 - no required state mutation in MVP
 - returns short state-based English message
-- low hunger, health, or mood messages take priority
+- low hunger, health, or mood messages take priority, but still keep the same lesson fields as normal output
 - otherwise uses `vocab_level`, time of day, and the last recorded command category to unlock a wider set of English micro-lessons
-- each normal-state lesson includes:
+- each lesson includes:
   - `Phrase`
   - `Theme`
   - `Tone`

@@ -4,6 +4,9 @@ This file lists the A/B example lines currently used by `tg_talk`.
 The lesson set focuses on everyday workplace English used in English-speaking software teams.
 More candidates unlock as `vocab_level` increases.
 
+Low hunger, health, or mood messages still use the same lesson format so `tg_talk`
+does not collapse into a bare status line.
+
 ## Tone Labels
 
 - `casual`: lightweight spoken English or Slack-style chat with teammates.
@@ -15,6 +18,23 @@ More candidates unlock as `vocab_level` increases.
 - `confident`: decisions made with momentum or ownership.
 - `cautious`: checking assumptions, risk, or impact before moving.
 - `pragmatic`: scope, shipping judgment, and progress over perfection.
+
+## care-state priority lines
+
+```text
+A: Do you want to keep debugging?
+B: Soon, but I am running low on energy. Can we grab a snack first?
+```
+
+```text
+A: Should we jump into the next task?
+B: Not yet. I need a little care before the next task.
+```
+
+```text
+A: You have been quiet. Are you okay?
+B: Talk to me. I need a small boost.
+```
 
 ## vocab 1+
 

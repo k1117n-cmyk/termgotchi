@@ -889,6 +889,16 @@ tg_get_command_category() {
   esac
 }
 
+tg_set_selected_talk_lesson() {
+  TG_SELECTED_TALK_LINE="$1"
+  TG_SELECTED_TALK_PHRASE="$2"
+  TG_SELECTED_TALK_THEME="$3"
+  TG_SELECTED_TALK_TONE="$4"
+  TG_SELECTED_TALK_MEANING="$5"
+  TG_SELECTED_TALK_EXAMPLE_A="$6"
+  TG_SELECTED_TALK_EXAMPLE_B="$7"
+}
+
 tg_pick_vocab_talk_line() {
   local vocab_level="$1"
   local time_bucket="${2:-}"
@@ -1035,11 +1045,35 @@ tg_talk() {
   TG_SELECTED_TALK_EXAMPLE_B=""
 
   if (( hunger < 30 )); then
-    line="Can we grab a snack soon?"
+    tg_set_selected_talk_lesson \
+      "Can we grab a snack soon? I am running low on energy." \
+      "running low on energy / grab a snack" \
+      "lightweight care requests" \
+      "casual" \
+      "Useful when you want to say you need a short break or a little fuel before continuing." \
+      "A: Do you want to keep debugging?" \
+      "B: Soon, but I am running low on energy. Can we grab a snack first?"
+    line="${TG_SELECTED_TALK_LINE}"
   elif (( health < 30 )); then
-    line="I need a little care before the next task."
+    tg_set_selected_talk_lesson \
+      "I need a little care before the next task." \
+      "before the next task / need a little care" \
+      "recovery before work" \
+      "cautious" \
+      "Useful when you want to pause and recover before taking on more work." \
+      "A: Should we jump into the next task?" \
+      "B: Not yet. I need a little care before the next task."
+    line="${TG_SELECTED_TALK_LINE}"
   elif (( mood < 30 )); then
-    line="Talk to me. I need a small boost."
+    tg_set_selected_talk_lesson \
+      "Talk to me. I need a small boost." \
+      "small boost / talk to me" \
+      "encouragement and morale" \
+      "collaborative" \
+      "Useful when morale is low and you want a gentle reset before continuing together." \
+      "A: You have been quiet. Are you okay?" \
+      "B: Talk to me. I need a small boost."
+    line="${TG_SELECTED_TALK_LINE}"
   else
     tg_pick_vocab_talk_line "${vocab_level}" "${time_bucket}" "${command_category}"
     line="${TG_SELECTED_TALK_LINE}"
