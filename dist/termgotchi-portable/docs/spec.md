@@ -127,6 +127,12 @@ Persistent state lives in:
 
 - if command name is not in `unique_commands`: `+2`
 
+### Normal Use Mood Recovery
+
+- each recorded normal command restores `mood +1`
+- clamp passive mood recovery to `80`
+- explicit care commands can still raise mood above `80`
+
 ### Level Threshold
 
 ```text

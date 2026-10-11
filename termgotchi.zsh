@@ -347,6 +347,7 @@ tg_apply_progress() {
 | (if "${count_command}" == "1" then ((\$state.command_count // 0) + 1) else (\$state.command_count // 0) end) as \$next_command_count
 | (if "${count_command}" == "1" and \$existing_index == null then \$unique_commands + ["${command_name}"] else \$unique_commands end) as \$next_unique_commands
 | (${earned_xp} + (if "${count_command}" == "1" and \$existing_index == null then 2 else 0 end)) as \$total_earned_xp
+| (if "${count_command}" == "1" then [((\$state.mood // 80) + 1), 80] | min else (\$state.mood // 80) end) as \$next_mood
 | ((\$state.xp // 0) + \$total_earned_xp) as \$raw_xp
 | ((\$state.level // 1)) as \$current_level
 | (20 + ((\$current_level - 1) * 10)) as \$current_threshold
@@ -359,6 +360,7 @@ tg_apply_progress() {
 | .xp = \$rolled_xp
 | .level = \$next_level
 | .xp_to_next = \$next_threshold
+| .mood = \$next_mood
 | .vocab_level = ([((\$state.vocab_level // 1) + ${vocab_gain}), (if \$next_unique_count > 0 then \$next_unique_count else 1 end)] | max)
 | .form = (
     if \$next_level >= 20 and \$next_unique_count >= 100 then "sage"

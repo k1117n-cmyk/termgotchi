@@ -6,6 +6,7 @@ This file summarizes user-facing changes without requiring readers to inspect ev
 
 ## Unreleased
 
+- Added passive Mood recovery from normal command use, capped at 80 so care commands still matter.
 - Kept `tg_talk` care-state responses at full lesson depth, including Phrase, Theme, Tone, Meaning, and Example fields.
 
 ## 0.8.1 - 2026-10-08
