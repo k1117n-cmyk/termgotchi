@@ -31,7 +31,7 @@ Japanese README: [`README.ja.md`](./README.ja.md)
 ## Current Status
 
 Initial implementation has started.
-The safe installer, runtime loader, initial state, `tg_status`, `tg_history`, care commands, final-form commands, idle decay, manual state migration, and passive XP hooks are in place.
+The safe installer, runtime loader, initial state, `tg_status`, `tg_history`, care commands, final-form commands, idle decay, manual state migration, and passive growth hooks are in place.
 
 ## Install
 
@@ -59,7 +59,7 @@ From a release package:
 
 - Install writes only under `~/.termgotchi/` and appends one guarded line to `~/.zshrc`.
 - Hooks are registered only in interactive `zsh`.
-- Passive XP excludes `tg_*`, `source`, `.`, shell meta commands such as `alias`, `autoload`, `history`, `setopt`, and `export`, plus wrapper prefixes such as `command`, `builtin`, and `noglob`.
+- Passive growth excludes `tg_*`, `source`, `.`, shell meta commands such as `alias`, `autoload`, `history`, `setopt`, and `export`, plus wrapper prefixes such as `command`, `builtin`, and `noglob`.
 - State writes use a temp file plus `mv`.
 - If the installer finds a broken `state.json`, it backs it up into `~/.termgotchi/backup/` and recreates it.
 - Installer exit code `24` means recovery succeeded after backing up an invalid state file.
@@ -89,7 +89,7 @@ Without an argument, `tg_import` searches the current directory, `~/Desktop`, an
 - `tg_history` shows recent growth events
 - `tg_feed`, `tg_clean`, `tg_talk`, `tg_train`, `tg_study`, and `tg_build` provide direct interaction
 - `tg_export`, `tg_import` support manual state backup and migration
-- normal commands grant XP via `preexec` / `precmd`
+- normal commands grant XP and restore Mood up to 80 via `preexec` / `precmd`
 - level-up and command-variety evolution:
   - `egg -> sprout`
   - `sprout -> buddy`

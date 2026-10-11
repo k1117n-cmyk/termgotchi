@@ -33,7 +33,7 @@ Deliver a playable `zsh` MVP.
 ### Done
 
 - care commands save state
-- normal commands increase XP
+- normal commands increase XP and restore Mood up to 80
 - form changes are visible
 
 ## Phase 3: Stabilization

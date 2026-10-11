@@ -25,7 +25,7 @@ Term-gotchi は `zsh` 向けのターミナルコンパニオンです。
 ## 現在の状態
 
 初期実装はすでに始まっています。  
-安全なインストーラ、ランタイムローダー、初期 state、`tg_status`、`tg_history`、お世話コマンド、最終形専用コマンド、放置による減衰、手動 state 移行、通常コマンドからの受動 XP フックが入っています。
+安全なインストーラ、ランタイムローダー、初期 state、`tg_status`、`tg_history`、お世話コマンド、最終形専用コマンド、放置による減衰、手動 state 移行、通常コマンドからの受動成長フックが入っています。
 
 ## インストール
 
@@ -53,7 +53,7 @@ Release パッケージを使う場合:
 
 - インストール時の書き込み先は `~/.termgotchi/` 配下と、`~/.zshrc` への保護付き 1 行の追記だけ
 - フック登録は対話的な `zsh` でのみ行う
-- 受動 XP では `tg_*`、`source`、`.`、`alias`、`autoload`、`history`、`setopt`、`export` などの shell メタコマンドに加え、`command`、`builtin`、`noglob` などのラッパー接頭辞を除外する
+- 受動成長では `tg_*`、`source`、`.`、`alias`、`autoload`、`history`、`setopt`、`export` などの shell メタコマンドに加え、`command`、`builtin`、`noglob` などのラッパー接頭辞を除外する
 - state 書き込みは一時ファイル経由 + `mv` で行う
 - インストーラが壊れた `state.json` を見つけた場合は、`~/.termgotchi/backup/` に退避して再生成する
 - インストーラの終了コード `24` は、無効な state ファイルを退避したうえで復旧に成功したことを意味する
@@ -82,7 +82,7 @@ tg_import ~/Desktop/termgotchi-state.json
 - `tg_history` が最近の成長イベントを表示する
 - `tg_feed`、`tg_clean`、`tg_talk`、`tg_train`、`tg_study`、`tg_build` で直接インタラクションできる
 - `tg_export`、`tg_import` で state を手動バックアップ・移行できる
-- 通常コマンドが `preexec` / `precmd` 経由で XP を与える
+- 通常コマンドが `preexec` / `precmd` 経由で XP を与え、Mood を 80 まで回復する
 - レベルアップとコマンド種類に応じた進化:
   - `egg -> sprout`
   - `sprout -> buddy`
